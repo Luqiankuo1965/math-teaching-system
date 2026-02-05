@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学习反馈提交 - 教学互动系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 50px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 700px;
+            width: 100%;
+            max-height: 95vh;
+            overflow-y: auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 35px;
+            padding-bottom: 25px;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        .header h1 {
+            color: #333;
+            font-size: 32px;
+            margin-bottom: 15px;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+        
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 10px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .required {
+            color: #e74c3c;
+        }
+        
+        input[type="text"],
+        input[type="email"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+        
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .difficulty-container {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+        
+        .difficulty-label {
+            display: block;
+            margin-bottom: 15px;
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+        
+        .difficulty-options {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+        }
+        
+        .difficulty-option {
+            position: relative;
+        }
+        
+        .difficulty-option input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+        }
+        
+        .difficulty-option label {
+            display: block;
+            text-align: center;
+            padding: 15px 8px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 11px;
+            line-height: 1.4;
+            margin-bottom: 0;
+        }
+        
+        .difficulty-option label .number {
+            display: block;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .difficulty-option input:checked + label {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .difficulty-option:hover label {
+            border-color: #667eea;
+        }
+        
+        textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+        
+        .submit-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .submit-btn:active {
+            transform: translateY(-1px);
+        }
+        
+        .submit-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        #statusMessage {
+            display: none;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 25px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #c3e6cb;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+        }
+        
+        .info-box {
+            background: #e8f0fe;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            font-size: 13px;
+            color: #666;
+            line-height: 1.6;
+        }
+        
+        .info-box strong {
+            color: #333;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 30px 20px;
+                border-radius: 15px;
+            }
+            
+            .header h1 {
+                font-size: 26px;
+            }
+            
+            .difficulty-options {
+                grid-template-columns: repeat(5, 1fr);
+                gap: 8px;
+            }
+            
+            .difficulty-option label {
+                padding: 12px 5px;
+                font-size: 10px;
+            }
+            
+            .difficulty-option label .number {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-link">← 返回首页</a>
+        
+        <div class="header">
+            <h1>📚 学习反馈提交</h1>
+            <p>你的反馈帮助我们改进教学质量，让学习更高效</p>
+        </div>
+        
+        <div class="info-box">
+            <strong>💡 提交说明：</strong><br>
+            请填写以下信息，你的反馈将帮助我们调整教学进度和方法。所有反馈都会被认真阅读和分析。
+        </div>
+        
+        <form id="feedbackForm">
+            <div class="form-group">
+                <label for="name">姓名 <span class="required">*</span></label>
+                <input type="text" id="name" required placeholder="请输入你的真实姓名">
+            </div>
+            
+            <div class="form-group">
+                <label for="class">班级 <span class="required">*</span></label>
+                <input type="text" id="class" required placeholder="例如：2024级数学1班">
+            </div>
+            
+            <div class="form-group">
+                <label for="studentId">学号 <span class="required">*</span></label>
+                <input type="text" id="studentId" required placeholder="例如：20240001">
+            </div>
+            
+            <div class="form-group">
+                <label for="course">课程 <span class="required">*</span></label>
+                <select id="course" required>
+                    <option value="">请选择课程</option>
+                    <option value="高等数学">高等数学</option>
+                    <option value="线性代数">线性代数</option>
+                    <option value="概率论与数理统计">概率论与数理统计</option>
+                    <option value="数学分析">数学分析</option>
+                    <option value="解析几何">解析几何</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>本次课程难度评价 <span class="required">*</span></label>
+                <div class="difficulty-container">
+                    <span class="difficulty-label">请选择1-5分评价难度</span>
+                    <div class="difficulty-options">
+                        <div class="difficulty-option">
+                            <input type="radio" name="difficulty" id="d1" value="1" required>
+                            <label for="d1">
+                                <span class="number">1</span>
+                                非常简单
+                            </label>
+                        </div>
+                        <div class="difficulty-option">
+                            <input type="radio" name="difficulty" id="d2" value="2">
+                            <label for="d2">
+                                <span class="number">2</span>
+                                简单
+                            </label>
+                        </div>
+                        <div class="difficulty-option">
+                            <input type="radio" name="difficulty" id="d3" value="3">
+                            <label for="d3">
+                                <span class="number">3</span>
+                                适中
+                            </label>
+                        </div>
+                        <div class="difficulty-option">
+                            <input type="radio" name="difficulty" id="d4" value="4">
+                            <label for="d4">
+                                <span class="number">4</span>
+                                困难
+                            </label>
+                        </div>
+                        <div class="difficulty-option">
+                            <input type="radio" name="difficulty" id="d5" value="5">
+                            <label for="d5">
+                                <span class="number">5</span>
+                                非常困难
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="feedback">详细反馈（可选）</label>
+                <textarea id="feedback" placeholder="请描述你对本次课程的具体感受或建议...&#10;&#10;例如：&#10;- 哪些知识点理解困难？&#10;- 希望老师多讲解哪些内容？&#10;- 对教学进度有什么建议？"></textarea>
+            </div>
+            
+            <button type="submit" class="submit-btn" id="submitBtn">提交反馈</button>
+        </form>
+        
+        <div id="statusMessage"></div>
+    </div>
+    
+    <script>
+        // GitHub配置 - 请替换为你的实际配置
+        const GITHUB_OWNER = '你的GitHub用户名';
+        const GITHUB_REPO = '教学互动系统';
+        
+        document.getElementById('feedbackForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = '正在提交...';
+            
+            // 获取表单数据
+            const name = document.getElementById('name').value;
+            const studentClass = document.getElementById('class').value;
+            const studentId = document.getElementById('studentId').value;
+            const course = document.getElementById('course').value;
+            const difficulty = document.querySelector('input[name="difficulty"]:checked').value;
+            const feedback = document.getElementById('feedback').value;
+            
+            // 获取难度文本
+            const difficultyTexts = {
+                '1': '非常简单',
+                '2': '简单',
+                '3': '适中',
+                '4': '困难',
+                '5': '非常困难'
+            };
+            
+            // 构建Issue标题和内容
+            const issueTitle = `[${course}] 学习反馈 - ${name}`;
+            const issueBody = `## 学习反馈详情
+
+**姓名**: ${name}
+**班级**: ${studentClass}
+**学号**: ${studentId}
+**课程**: ${course}
+**难度评价**: ${difficulty}分（${difficultyTexts[difficulty]}）
+**提交时间**: ${new Date().toLocaleString('zh-CN')}
+
+---
+
+${feedback ? `**详细反馈**:\n\n${feedback}\n\n---\n` : ''}
+
+*此反馈由学生通过在线表单自动提交`;
+
+            // 创建Issue
+            try {
+                const token = await getGitHubToken();
+                
+                const response = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/issues`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `token ${token}`,
+                        'Accept': 'application/vnd.github.v3+json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        title: issueTitle,
+                        body: issueBody,
+                        labels: ['反馈', course, `难度-${difficulty}`]
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    showMessage('✅ 反馈提交成功！感谢你的反馈，我们会认真阅读并改进教学。', 'success');
+                    console.log('Issue created:', result.html_url);
+                    
+                    // 清空表单
+                    this.reset();
+                } else {
+                    const error = await response.json();
+                    showMessage('❌ 提交失败：' + (error.message || '未知错误，请稍后重试'), 'error');
+                }
+            } catch (error) {
+                showMessage('❌ 提交失败：' + error.message, 'error');
+            }
+            
+            submitBtn.disabled = false;
+            submitBtn.textContent = '提交反馈';
+        });
+        
+        async function getGitHubToken() {
+            // 检查localStorage中是否有token
+            let token = localStorage.getItem('github_token');
+            
+            if (!token) {
+                token = prompt('请输入你的GitHub Personal Access Token（如果没有，请联系老师获取）:');
+                if (token) {
+                    localStorage.setItem('github_token', token);
+                }
+            }
+            
+            return token;
+        }
+        
+        function showMessage(message, type) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.textContent = message;
+            statusDiv.className = type;
+            statusDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 8000);
+        }
+    </script>
+</body>
+</html>

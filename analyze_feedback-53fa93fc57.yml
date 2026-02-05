@@ -1,0 +1,219 @@
+name: 分析学生反馈数据
+
+on:
+  # 每天UTC时间0点运行（北京时间8点）
+  schedule:
+    - cron: '0 0 * * *'
+  
+  # 手动触发
+  workflow_dispatch:
+  
+  # 当有新的反馈Issue提交时触发
+  issues:
+    types: [opened, edited, closed]
+
+permissions:
+  contents: write
+  issues: read
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+      
+      - name: 设置Python环境
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: 安装依赖
+        run: |
+          pip install pygithub requests
+      
+      - name: 创建数据目录
+        run: mkdir -p data
+      
+      - name: 运行分析脚本
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          python << 'EOF'
+          import json
+          import os
+          from datetime import datetime, timedelta
+          from github import Github
+          
+          # 初始化GitHub客户端
+          token = os.environ['GITHUB_TOKEN']
+          repo_name = os.environ['GITHUB_REPOSITORY']
+          g = Github(token)
+          repo = g.get_repo(repo_name)
+          
+          # 获取所有反馈Issues
+          print("🔍 获取反馈Issues...")
+          issues = repo.get_issues(state='all', labels=['反馈'])
+          
+          stats = {
+              'last_updated': datetime.now().isoformat(),
+              'total_issues': 0,
+              'courses': {},
+              'students': {},
+              'daily_stats': {},
+              'weekly_stats': {},
+              'issues_detail': []
+          }
+          
+          # 初始化日期统计
+          today = datetime.now()
+          for i in range(30):
+              date = (today - timedelta(days=i)).strftime('%Y-%m-%d')
+              stats['daily_stats'][date] = {'count': 0}
+          
+          # 初始化周统计
+          for i in range(12):
+              year, week, _ = (today - timedelta(weeks=i)).isocalendar()
+              week_key = f"{year}-W{week:02d}"
+              stats['weekly_stats'][week_key] = {'count': 0, 'avg_difficulty': 0}
+          
+          student_feedbacks = {}
+          
+          # 遍历Issues
+          for issue in issues:
+              # 跳过非反馈Issue
+              if not any(label.name == '反馈' for label in issue.labels):
+                  continue
+              
+              stats['total_issues'] += 1
+              
+              # 解析Issue内容
+              body = issue.body or ''
+              created_at = issue.created_at
+              date_key = created_at.strftime('%Y-%m-%d')
+              year, week, _ = created_at.isocalendar()
+              week_key = f"{year}-W{week:02d}"
+              
+              # 提取信息
+              course = '未知课程'
+              student_name = '匿名学生'
+              difficulty = 3
+              
+              for line in body.split('\n'):
+                  if '课程名称' in line or '课程' in line:
+                      course = line.split('：')[-1].split(':')[-1].strip()
+                  if '姓名' in line or '学生' in line:
+                      student_name = line.split('：')[-1].split(':')[-1].strip()
+                  if '难度' in line:
+                      try:
+                          difficulty = int(line.split('：')[-1].split(':')[-1].strip().replace('分', ''))
+                      except:
+                          difficulty = 3
+              
+              # 统计课程
+              if course not in stats['courses']:
+                  stats['courses'][course] = {
+                      'total_feedback': 0,
+                      'student_count': 0,
+                      'difficulty': {'1': 0, '2': 0, '3': 0, '4': 0, '5': 0}
+                  }
+              
+              stats['courses'][course]['total_feedback'] += 1
+              
+              # 记录学生参与情况
+              if course not in stats['courses'][course].get('students', set()):
+                  stats['courses'][course]['student_count'] += 1
+                  stats['courses'][course]['students'] = set()
+              stats['courses'][course]['students'].add(student_name)
+              
+              # 统计难度
+              difficulty_key = str(max(1, min(5, difficulty)))
+              stats['courses'][course]['difficulty'][difficulty_key] += 1
+              
+              # 统计学生
+              if student_name not in stats['students']:
+                  stats['students'][student_name] = {
+                      'name': student_name,
+                      'total_feedback': 0,
+                      'avg_difficulty': 0
+                  }
+              
+              stats['students'][student_name]['total_feedback'] += 1
+              
+              # 记录反馈详情（用于计算平均难度）
+              if student_name not in student_feedbacks:
+                  student_feedbacks[student_name] = []
+              student_feedbacks[student_name].append(difficulty)
+              
+              # 每日统计
+              if date_key in stats['daily_stats']:
+                  stats['daily_stats'][date_key]['count'] += 1
+              
+              # 每周统计
+              if week_key in stats['weekly_stats']:
+                  stats['weekly_stats'][week_key]['count'] += 1
+              
+              # 保存详细记录（用于后续分析）
+              stats['issues_detail'].append({
+                  'id': issue.number,
+                  'title': issue.title,
+                  'course': course,
+                  'student': student_name,
+                  'difficulty': difficulty,
+                  'created_at': created_at.isoformat(),
+                  'state': issue.state
+              })
+          
+          # 计算学生的平均难度
+          for student_name in stats['students']:
+              feedbacks = student_feedbacks[student_name]
+              if feedbacks:
+                  stats['students'][student_name]['avg_difficulty'] = round(
+                      sum(feedbacks) / len(feedbacks), 2
+                  )
+          
+          # 计算周统计的平均难度
+          weekly_difficulties = {}
+          for week_key in stats['weekly_stats']:
+              weekly_difficulties[week_key] = []
+          
+          for issue in stats['issues_detail']:
+              created_at = datetime.fromisoformat(issue['created_at'])
+              year, week, _ = created_at.isocalendar()
+              week_key = f"{year}-W{week:02d}"
+              if week_key in weekly_difficulties:
+                  weekly_difficulties[week_key].append(issue['difficulty'])
+          
+          for week_key in stats['weekly_stats']:
+              difficulties = weekly_difficulties.get(week_key, [])
+              if difficulties:
+                  stats['weekly_stats'][week_key]['avg_difficulty'] = round(
+                      sum(difficulties) / len(difficulties), 2
+                  )
+              else:
+                  stats['weekly_stats'][week_key]['avg_difficulty'] = 0
+          
+          # 清理courses中的临时set
+          for course in stats['courses']:
+              if 'students' in stats['courses'][course]:
+                  del stats['courses'][course]['students']
+          
+          # 保存统计数据
+          with open('data/stats.json', 'w', encoding='utf-8') as f:
+              json.dump(stats, f, ensure_ascii=False, indent=2)
+          
+          print("✅ 数据分析完成！")
+          print(f"📊 总反馈数: {stats['total_issues']}")
+          print(f"📚 课程数: {len(stats['courses'])}")
+          print(f"👥 学生数: {len(stats['students'])}")
+          EOF
+      
+      - name: 提交统计文件
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add data/stats.json
+          git diff --quiet && git diff --staged --quiet || git commit -m "📊 更新教学数据统计 [自动运行]"
+          git push

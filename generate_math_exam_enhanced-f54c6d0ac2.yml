@@ -1,0 +1,690 @@
+name: 智能试卷生成系统（增强版）
+
+on:
+  schedule:
+    - cron: '0 8 * * 0'  # 每周日上午8点
+  workflow_dispatch:
+    inputs:
+      exam_type:
+        description: '试卷类型'
+        required: true
+        type: choice
+        options:
+          - 单元测试
+          - 期中考试
+          - 期末考试
+          - 随机练习
+          - 自适应测试
+        default: '单元测试'
+      course:
+        description: '课程章节'
+        required: true
+        type: choice
+        options:
+          - 全部章节
+          - 第一章 函数与极限
+          - 第二章 导数与微分
+          - 第三章 积分
+          - 第四章 多元函数
+          - 第五章 级数
+        default: '全部章节'
+      question_count:
+        description: '题目数量'
+        required: true
+        type: number
+        default: 10
+      difficulty:
+        description: '难度等级 (1-5)'
+        required: true
+        type: number
+        default: 3
+      adaptive_mode:
+        description: '自适应模式（根据学生水平调整）'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  issues: read
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+      
+      - name: 设置Python环境
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: 安装依赖
+        run: |
+          pip install pygithub requests numpy
+          
+      - name: 创建数据目录
+        run: mkdir -p data/exams data/exam_history data/student_results
+      
+      - name: 运行增强试卷生成脚本
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          EXAM_TYPE: ${{ github.event.inputs.exam_type || '单元测试' }}
+          COURSE: ${{ github.event.inputs.course || '全部章节' }}
+          QUESTION_COUNT: ${{ github.event.inputs.question_count || 10 }}
+          DIFFICULTY: ${{ github.event.inputs.difficulty || 3 }}
+          ADAPTIVE_MODE: ${{ github.event.inputs.adaptive_mode || false }}
+        run: |
+          python << 'EOF'
+          import json
+          import os
+          import random
+          from datetime import datetime
+          from github import Github
+          
+          # 初始化
+          token = os.environ['GITHUB_TOKEN']
+          repo_name = os.environ['GITHUB_REPOSITORY']
+          g = Github(token)
+          repo = g.get_repo(repo_name)
+          
+          # 获取输入参数
+          exam_type = os.environ.get('EXAM_TYPE', '单元测试')
+          course = os.environ.get('COURSE', '全部章节')
+          question_count = int(os.environ.get('QUESTION_COUNT', 10))
+          target_difficulty = int(os.environ.get('DIFFICULTY', 3))
+          adaptive_mode = os.environ.get('ADAPTIVE_MODE', 'false').lower() == 'true'
+          
+          print(f"📝 开始生成{exam_type}试卷...")
+          print(f"   课程: {course}")
+          print(f"   题目数量: {question_count}")
+          print(f"   目标难度: {target_difficulty}")
+          print(f"   自适应模式: {adaptive_mode}")
+          
+          # 增强版数学题库
+          enhanced_question_bank = {
+              '第一章 函数与极限': [
+                  {
+                      'id': 'M1-001',
+                      'type': '单选题',
+                      'chapter': '第一章',
+                      'knowledge_point': '极限定义',
+                      'content': r'计算极限：$$\lim_{x\to 0} \frac{\sin 3x}{x}$$',
+                      'options': ['0', '1', '3', '∞'],
+                      'answer': 2,
+                      'explanation': r'使用重要极限公式：$\lim_{x\to 0} \frac{\sin ax}{x} = a$，所以结果为3',
+                      'difficulty': 1,
+                      'points': 5,
+                      'estimated_time': 3,
+                      'tags': ['基础', '重要极限']
+                  },
+                  {
+                      'id': 'M1-002',
+                      'type': '单选题',
+                      'chapter': '第一章',
+                      'knowledge_point': '连续性',
+                      'content': r'函数 $f(x) = \begin{cases} x^2, & x \neq 1 \\ a, & x = 1 \end{cases}$ 在 $x=1$ 处连续，则 $a=$',
+                      'options': ['0', '1', '2', '不存在'],
+                      'answer': 1,
+                      'explanation': r'连续要求 $\lim_{x\to 1} f(x) = f(1)$，即 $\lim_{x\to 1} x^2 = a$，所以 $a=1$',
+                      'difficulty': 2,
+                      'points': 5,
+                      'estimated_time': 5,
+                      'tags': ['连续性', '分段函数']
+                  },
+                  {
+                      'id': 'M1-003',
+                      'type': '多选题',
+                      'chapter': '第一章',
+                      'knowledge_point': '极限性质',
+                      'content': r'下列极限计算正确的有：',
+                      'options': [
+                          r'$\lim_{x\to 0} \frac{\tan x}{x} = 1$',
+                          r'$\lim_{x\to \infty} \frac{1}{x} = 0$',
+                          r'$\lim_{x\to 0} \frac{1-\cos x}{x^2} = \frac{1}{2}$',
+                          r'$\lim_{x\to \infty} (1+\frac{1}{x})^x = 1$'
+                      ],
+                      'answer': [0, 1, 2],
+                      'explanation': r'A、B、C正确，D应为$e$',
+                      'difficulty': 3,
+                      'points': 8,
+                      'estimated_time': 8,
+                      'tags': ['极限', '重要公式']
+                  },
+                  {
+                      'id': 'M1-004',
+                      'type': '计算题',
+                      'chapter': '第一章',
+                      'knowledge_point': '不定式极限',
+                      'content': r'计算极限：$$\lim_{x\to 0} \frac{e^x - 1 - x}{x^2}$$',
+                      'answer': r'$\frac{1}{2}$',
+                      'explanation': r'使用泰勒展开或洛必达法则，$e^x = 1 + x + \frac{x^2}{2} + o(x^2)$，代入得 $\frac{1}{2}$',
+                      'difficulty': 4,
+                      'points': 12,
+                      'estimated_time': 15,
+                      'tags': ['泰勒展开', '洛必达法则']
+                  },
+                  {
+                      'id': 'M1-005',
+                      'type': '证明题',
+                      'chapter': '第一章',
+                      'knowledge_point': '极限存在准则',
+                      'content': r'证明：$\lim_{n\to \infty} n\sin\frac{1}{n} = 1$',
+                      'answer': r'使用夹逼准则：$\cos\frac{1}{n} < n\sin\frac{1}{n} < 1$，两边极限均为1',
+                      'explanation': r'利用不等式 $\cos x < \frac{\sin x}{x} < 1$（$x>0$），令$x=\frac{1}{n}$，夹逼得证',
+                      'difficulty': 4,
+                      'points': 15,
+                      'estimated_time': 20,
+                      'tags': ['证明', '夹逼准则']
+                  },
+                  {
+                      'id': 'M1-006',
+                      'type': '计算题',
+                      'chapter': '第一章',
+                      'knowledge_point': '等价无穷小',
+                      'content': r'计算极限：$$\lim_{x\to 0} \frac{\sqrt{1+x} - 1}{\sin x}$$',
+                      'answer': r'$\frac{1}{2}$',
+                      'explanation': r'分子有理化：$\frac{x}{\sqrt{1+x} + 1}$，分母用等价无穷小$\sin x \sim x$，得$\frac{1}{2}$',
+                      'difficulty': 2,
+                      'points': 10,
+                      'estimated_time': 10,
+                      'tags': ['等价无穷小', '分子有理化']
+                  }
+              ],
+              '第二章 导数与微分': [
+                  {
+                      'id': 'M2-001',
+                      'type': '单选题',
+                      'chapter': '第二章',
+                      'knowledge_point': '导数定义',
+                      'content': r'函数 $f(x) = |x|$ 在 $x=0$ 处',
+                      'options': ['可导且导数为0', '可导且导数为1', '不可导', '导数为无穷'],
+                      'answer': 2,
+                      'explanation': r'左导数为-1，右导数为1，不相等，故不可导',
+                      'difficulty': 2,
+                      'points': 5,
+                      'estimated_time': 5,
+                      'tags': ['导数', '连续性']
+                  },
+                  {
+                      'id': 'M2-002',
+                      'type': '计算题',
+                      'chapter': '第二章',
+                      'knowledge_point': '复合函数求导',
+                      'content': r'求函数 $y = e^{\sin^2 x}$ 的导数',
+                      'answer': r'$y' = e^{\sin^2 x} \cdot 2\sin x \cdot \cos x = e^{\sin^2 x} \sin 2x$',
+                      'explanation': r'使用链式法则：$y' = e^{\sin^2 x} \cdot 2\sin x \cdot \cos x$',
+                      'difficulty': 3,
+                      'points': 10,
+                      'estimated_time': 10,
+                      'tags': ['复合函数', '链式法则']
+                  },
+                  {
+                      'id': 'M2-003',
+                      'type': '计算题',
+                      'chapter': '第二章',
+                      'knowledge_point': '隐函数求导',
+                      'content': r'求方程 $x^2 + y^2 = R^2$ 所确定的隐函数的导数 $y\'$',
+                      'answer': r'$y\' = -\frac{x}{y}$',
+                      'explanation': r'两边对$x$求导：$2x + 2yy\' = 0$，得$y\' = -\frac{x}{y}$',
+                      'difficulty': 3,
+                      'points': 10,
+                      'estimated_time': 10,
+                      'tags': ['隐函数', '求导']
+                  },
+                  {
+                      'id': 'M2-004',
+                      'type': '计算题',
+                      'chapter': '第二章',
+                      'knowledge_point': '参数方程求导',
+                      'content': r'设 $x = t^2, y = t^3$，求 $\frac{dy}{dx}$',
+                      'answer': r'$\frac{dy}{dx} = \frac{3t}{2}$',
+                      'explanation': r'$\frac{dy}{dx} = \frac{dy/dt}{dx/dt} = \frac{3t^2}{2t} = \frac{3t}{2}$',
+                      'difficulty': 2,
+                      'points': 8,
+                      'estimated_time': 8,
+                      'tags': ['参数方程', '求导']
+                  },
+                  {
+                      'id': 'M2-005',
+                      'type': '应用题',
+                      'chapter': '第二章',
+                      'knowledge_point': '导数应用',
+                      'content': r'一个球体体积变化率为 $12\pi$ cm³/s，当半径为 2 cm 时，半径变化率为多少？',
+                      'answer': r'半径变化率为 $0.75$ cm/s',
+                      'explanation': r'$V = \frac{4}{3}\pi r^3$，$\frac{dV}{dt} = 4\pi r^2 \frac{dr}{dt}$，代入得$\frac{dr}{dt} = \frac{12\pi}{16\pi} = 0.75$',
+                      'difficulty': 4,
+                      'points': 12,
+                      'estimated_time': 15,
+                      'tags': ['导数应用', '变化率']
+                  }
+              ],
+              '第三章 积分': [
+                  {
+                      'id': 'M3-001',
+                      'type': '单选题',
+                      'chapter': '第三章',
+                      'knowledge_point': '不定积分',
+                      'content': r'若 $\int f(x) dx = x^2 + C$，则 $f(x) = $',
+                      'options': ['$2x$', '$2x + C$', '$x^2$', '$\frac{x^3}{3}$'],
+                      'answer': 0,
+                      'explanation': r'由不定积分定义，$f(x) = (x^2 + C)\' = 2x$',
+                      'difficulty': 1,
+                      'points': 5,
+                      'estimated_time': 3,
+                      'tags': ['不定积分', '基本概念']
+                  },
+                  {
+                      'id': 'M3-002',
+                      'type': '计算题',
+                      'chapter': '第三章',
+                      'knowledge_point': '换元积分法',
+                      'content': r'计算不定积分：$\int x e^{x^2} dx$',
+                      'answer': r'$\frac{1}{2} e^{x^2} + C$',
+                      'explanation': r'令$u = x^2$，$du = 2x dx$，原式$= \frac{1}{2} \int e^u du = \frac{1}{2} e^{x^2} + C$',
+                      'difficulty': 2,
+                      'points': 8,
+                      'estimated_time': 8,
+                      'tags': ['换元法', '指数函数']
+                  },
+                  {
+                      'id': 'M3-003',
+                      'type': '计算题',
+                      'chapter': '第三章',
+                      'knowledge_point': '分部积分法',
+                      'content': r'计算不定积分：$\int x \cos x dx$',
+                      'answer': r'$x \sin x + \cos x + C$',
+                      'explanation': r'分部积分：$u=x, dv=\cos x dx$，$du=dx, v=\sin x$，原式$= x\sin x - \int \sin x dx = x\sin x + \cos x + C$',
+                      'difficulty': 3,
+                      'points': 10,
+                      'estimated_time': 10,
+                      'tags': ['分部积分', '三角函数']
+                  },
+                  {
+                      'id': 'M3-004',
+                      'type': '计算题',
+                      'chapter': '第三章',
+                      'knowledge_point': '定积分',
+                      'content': r'计算定积分：$\int_0^{\pi/2} \sin^2 x dx$',
+                      'answer': r'$\frac{\pi}{4}$',
+                      'explanation': r'使用降幂公式：$\sin^2 x = \frac{1-\cos 2x}{2}$，积分得$[\frac{x}{2} - \frac{\sin 2x}{4}]_0^{\pi/2} = \frac{\pi}{4}$',
+                      'difficulty': 3,
+                      'points': 12,
+                      'estimated_time': 12,
+                      'tags': ['定积分', '三角函数']
+                  },
+                  {
+                      'id': 'M3-005',
+                      'type': '应用题',
+                      'chapter': '第三章',
+                      'knowledge_point': '定积分应用',
+                      'content': r'求曲线 $y = \sqrt{x}$ 与 $x$ 轴在 $[0, 4]$ 区间围成的图形面积',
+                      'answer': r'$\frac{16}{3}$',
+                      'explanation': r'面积 $= \int_0^4 \sqrt{x} dx = [\frac{2}{3} x^{3/2}]_0^4 = \frac{2}{3} \cdot 8 = \frac{16}{3}$',
+                      'difficulty': 2,
+                      'points': 10,
+                      'estimated_time': 10,
+                      'tags': ['定积分应用', '面积']
+                  }
+              ],
+              '第四章 多元函数': [
+                  {
+                      'id': 'M4-001',
+                      'type': '单选题',
+                      'chapter': '第四章',
+                      'knowledge_point': '偏导数',
+                      'content': r'设 $z = x^2 + y^2$，则 $\frac{\partial z}{\partial x} =$',
+                      'options': ['$2x$', '$2y$', '$2x + 2y$', '$x^2$'],
+                      'answer': 0,
+                      'explanation': r'对$x$求偏导，$y$视为常数：$\frac{\partial}{\partial x}(x^2 + y^2) = 2x$',
+                      'difficulty': 1,
+                      'points': 5,
+                      'estimated_time': 3,
+                      'tags': ['偏导数', '多元函数']
+                  },
+                  {
+                      'id': 'M4-002',
+                      'type': '计算题',
+                      'chapter': '第四章',
+                      'knowledge_point': '二阶偏导数',
+                      'content': r'设 $z = e^{xy}$，求 $\frac{\partial^2 z}{\partial x \partial y}$',
+                      'answer': r'$(1 + xy)e^{xy}$',
+                      'explanation': r'先对$x$求偏导：$\frac{\partial z}{\partial x} = ye^{xy}$，再对$y$求偏导：$\frac{\partial^2 z}{\partial x \partial y} = e^{xy} + xy e^{xy} = (1+xy)e^{xy}$',
+                      'difficulty': 4,
+                      'points': 12,
+                      'estimated_time': 15,
+                      'tags': ['二阶偏导', '复合函数']
+                  }
+              ],
+              '第五章 级数': [
+                  {
+                      'id': 'M5-001',
+                      'type': '单选题',
+                      'chapter': '第五章',
+                      'knowledge_point': '级数收敛',
+                      'content': r'级数 $\sum_{n=1}^{\infty} \frac{1}{n^2}$ 的收敛性为',
+                      'options': ['发散', '收敛', '条件收敛', '无法判断'],
+                      'answer': 1,
+                      'explanation': r'p-级数，$p=2>1$，故收敛',
+                      'difficulty': 2,
+                      'points': 5,
+                      'estimated_time': 5,
+                      'tags': ['p-级数', '收敛性']
+                  },
+                  {
+                      'id': 'M5-002',
+                      'type': '计算题',
+                      'chapter': '第五章',
+                      'knowledge_point': '幂级数',
+                      'content': r'求幂级数 $\sum_{n=0}^{\infty} \frac{x^n}{n!}$ 的和函数',
+                      'answer': r'$e^x$',
+                      'explanation': r'这是$e^x$的泰勒展开式，故和函数为$e^x$',
+                      'difficulty': 3,
+                      'points': 10,
+                      'estimated_time': 10,
+                      'tags': ['幂级数', '和函数']
+                  }
+              ]
+          }
+          
+          # 从GitHub Issues获取自定义题库
+          print("🔍 从题库Issues获取自定义题目...")
+          custom_questions = []
+          try:
+              issues = repo.get_issues(state='all', labels=['题库'])
+              
+              for issue in issues:
+                  if not any(label.name == '题库' for label in issue.labels):
+                      continue
+                  
+                  body = issue.body or ''
+                  
+                  # 尝试解析Issue中的题目信息
+                  question = {
+                      'id': f'C-{issue.number}',
+                      'type': '计算题',
+                      'chapter': '自定义',
+                      'knowledge_point': '自定义知识点',
+                      'content': body,
+                      'answer': '见Issue评论',
+                      'explanation': '',
+                      'difficulty': 3,
+                      'points': 10,
+                      'estimated_time': 10,
+                      'tags': ['自定义']
+                  }
+                  
+                  # 解析元数据
+                  for line in body.split('\n'):
+                      if '难度' in line or 'Difficulty' in line.lower():
+                          try:
+                              question['difficulty'] = int(line.split('：')[-1].split(':')[-1].strip().replace('分', '').replace('级', ''))
+                          except:
+                              pass
+                      if '章节' in line or 'Chapter' in line.lower():
+                          question['chapter'] = line.split('：')[-1].split(':')[-1].strip()
+                      if '知识点' in line or 'Knowledge' in line.lower():
+                          question['knowledge_point'] = line.split('：')[-1].split(':')[-1].strip()
+                      if '题型' in line or 'Type' in line.lower():
+                              if '单选' in line:
+                                  question['type'] = '单选题'
+                              elif '多选' in line:
+                                  question['type'] = '多选题'
+                              elif '证明' in line:
+                                  question['type'] = '证明题'
+                              elif '应用' in line:
+                                  question['type'] = '应用题'
+                  
+                  custom_questions.append(question)
+              
+              if custom_questions:
+                  print(f"   找到 {len(custom_questions)} 道自定义题目")
+                  enhanced_question_bank['自定义'] = custom_questions
+              
+          except Exception as e:
+              print(f"   获取自定义题库失败: {e}")
+          
+          # 自适应模式：读取学生历史成绩数据
+          adaptive_difficulty = target_difficulty
+          if adaptive_mode:
+              print("📊 启用自适应模式，分析学生历史数据...")
+              try:
+                  with open('data/stats_enhanced.json', 'r', encoding='utf-8') as f:
+                      stats = json.load(f)
+                  
+                  # 计算全班平均理解程度
+                  if 'students' in stats and len(stats['students']) > 0:
+                      total_understanding = sum(s.get('avg_understanding', 3) for s in stats['students'].values())
+                      avg_understanding = total_understanding / len(stats['students'])
+                      
+                      # 根据学生水平调整难度
+                      if avg_understanding >= 4:
+                          adaptive_difficulty = min(5, target_difficulty + 1)
+                          print(f"   学生水平较高，难度调整为: {adaptive_difficulty}")
+                      elif avg_understanding <= 2:
+                          adaptive_difficulty = max(1, target_difficulty - 1)
+                          print(f"   学生水平较低，难度调整为: {adaptive_difficulty}")
+                      else:
+                          print(f"   学生水平适中，保持难度: {adaptive_difficulty}")
+                  
+              except Exception as e:
+                  print(f"   读取历史数据失败，使用默认难度: {target_difficulty}")
+          
+          # 筛选题目
+          all_questions = []
+          for chapter_name, questions in enhanced_question_bank.items():
+              for q in questions:
+                  q['source_chapter'] = chapter_name
+                  all_questions.append(q)
+          
+          # 按课程章节筛选
+          if course != '全部章节' and course in enhanced_question_bank:
+              filtered_questions = [q for q in all_questions if q['source_chapter'] == course]
+          else:
+              filtered_questions = all_questions
+          
+          # 按难度筛选（自适应使用调整后的难度）
+          difficulty_range = max(0, adaptive_difficulty - 1)
+          difficulty_filtered = [q for q in filtered_questions 
+                                 if abs(q['difficulty'] - adaptive_difficulty) <= difficulty_range]
+          
+          if not difficulty_filtered:
+              difficulty_filtered = filtered_questions
+              print(f"⚠️  未找到难度{adaptive_difficulty}的题目，使用全部可用题目")
+          
+          # 智能选题：平衡题型和知识点
+          type_distribution = {
+              '单选题': int(question_count * 0.4),
+              '多选题': int(question_count * 0.2),
+              '计算题': int(question_count * 0.3),
+              '证明题': int(question_count * 0.05),
+              '应用题': int(question_count * 0.05)
+          }
+          
+          # 修正分配
+          remaining = question_count - sum(type_distribution.values())
+          type_distribution['计算题'] += remaining
+          
+          selected_questions = []
+          
+          for question_type, count in type_distribution.items():
+              if count <= 0:
+                  continue
+              
+              type_questions = [q for q in difficulty_filtered if q['type'] == question_type]
+              
+              if len(type_questions) >= count:
+                  # 优先选择不同知识点
+                  knowledge_points = {}
+                  for q in type_questions:
+                      kp = q.get('knowledge_point', 'default')
+                      if kp not in knowledge_points:
+                          knowledge_points[kp] = []
+                      knowledge_points[kp].append(q)
+                  
+                  # 从不同知识点中随机选择
+                  selected_from_type = []
+                  remaining_to_select = count
+                  
+                  knowledge_keys = list(knowledge_points.keys())
+                  random.shuffle(knowledge_keys)
+                  
+                  for kp in knowledge_keys:
+                      if remaining_to_select <= 0:
+                          break
+                      
+                      questions_from_kp = random.sample(
+                          knowledge_points[kp],
+                          min(len(knowledge_points[kp]), 1 + remaining_to_select // len(knowledge_keys))
+                      )
+                      selected_from_type.extend(questions_from_kp)
+                      remaining_to_select -= len(questions_from_kp)
+                  
+                  # 如果还不够，从任意题目中补充
+                  if len(selected_from_type) < count:
+                      remaining = count - len(selected_from_type)
+                      available = [q for q in type_questions if q not in selected_from_type]
+                      selected_from_type.extend(random.sample(available, min(len(available), remaining)))
+                  
+                  selected_questions.extend(selected_from_type[:count])
+              else:
+                  # 题目不够，全部使用
+                  selected_questions.extend(type_questions)
+          
+          # 按难度排序（简单到复杂）
+          selected_questions.sort(key=lambda x: x['difficulty'])
+          
+          # 计算总分和预计时间
+          total_points = sum(q['points'] for q in selected_questions)
+          total_time = sum(q.get('estimated_time', 10) for q in selected_questions)
+          exam_duration = max(30, (total_time // 5) * 5)  # 向上取整到5的倍数
+          
+          # 生成试卷元数据
+          exam_metadata = {
+              'exam_id': datetime.now().strftime('%Y%m%d%H%M%S'),
+              'exam_type': exam_type,
+              'course': course,
+              'created_at': datetime.now().isoformat(),
+              'difficulty_level': adaptive_difficulty,
+              'adaptive_mode': adaptive_mode,
+              'duration': exam_duration,
+              'total_points': total_points,
+              'question_count': len(selected_questions),
+              'passing_score': int(total_points * 0.6),  # 及格分
+              'estimated_time': total_time,
+              'statistics': {
+                  'type_distribution': type_distribution,
+                  'difficulty_distribution': {},
+                  'knowledge_points_coverage': []
+              }
+          }
+          
+          # 统计难度分布
+          for q in selected_questions:
+              diff = str(q['difficulty'])
+              exam_metadata['statistics']['difficulty_distribution'][diff] = \
+                  exam_metadata['statistics']['difficulty_distribution'].get(diff, 0) + 1
+              
+              kp = q.get('knowledge_point', '未知')
+              if kp not in exam_metadata['statistics']['knowledge_points_coverage']:
+                  exam_metadata['statistics']['knowledge_points_coverage'].append(kp)
+          
+          # 生成完整试卷
+          exam = {
+              **exam_metadata,
+              'questions': selected_questions,
+              'instructions': [
+                  f'考试时间：{exam_duration}分钟',
+                  f'总分：{total_points}分',
+                  f'及格分：{int(total_points * 0.6)}分',
+                  '请在规定时间内完成所有题目',
+                  '计算题需写出详细过程',
+                  '证明题需写出完整证明过程'
+              ],
+              'scoring_criteria': {
+                  '单选题': '答案正确得满分，错误不得分',
+                  '多选题': '全对得满分，部分正确得一半分，错误不得分',
+                  '计算题': '结果正确得60%分数，过程完整得40%分数',
+                  '证明题': '证明过程完整得满分，逻辑严密得额外加分',
+                  '应用题': '解题思路清晰得40%，计算正确得60%'
+              }
+          }
+          
+          # 保存试卷
+          exam_filename = f"exam_{datetime.now().strftime('%Y%m%d')}.json"
+          with open(f'data/exams/{exam_filename}', 'w', encoding='utf-8') as f:
+              json.dump(exam, f, ensure_ascii=False, indent=2)
+          
+          # 更新历史记录
+          history_file = 'data/exam_history/index.json'
+          try:
+              with open(history_file, 'r', encoding='utf-8') as f:
+                  history = json.load(f)
+          except:
+              history = {'exams': []}
+          
+          history['exams'].append({
+              'exam_id': exam['exam_id'],
+              'exam_type': exam_type,
+              'course': course,
+              'created_at': exam['created_at'],
+              'question_count': len(selected_questions),
+              'total_points': total_points,
+              'difficulty': adaptive_difficulty,
+              'file': exam_filename
+          })
+          
+          history['exams'] = sorted(history['exams'], 
+                                     key=lambda x: x['created_at'], 
+                                     reverse=True)
+          
+          with open(history_file, 'w', encoding='utf-8') as f:
+              json.dump(history, f, ensure_ascii=False, indent=2)
+          
+          # 生成学生答题卡模板
+          answer_sheet = {
+              'exam_id': exam['exam_id'],
+              'student_name': '',
+              'student_id': '',
+              'submit_time': '',
+              'answers': {},
+              'score': 0,
+              'time_spent': 0
+          }
+          
+          for q in selected_questions:
+              q_id = q['id']
+              if q['type'] in ['单选题', '多选题']:
+                  answer_sheet['answers'][q_id] = {'selected': None, 'correct': q['answer']}
+              else:
+                  answer_sheet['answers'][q_id] = {'content': '', 'correct': q['answer']}
+          
+          answer_sheet_filename = f"answer_sheet_template_{datetime.now().strftime('%Y%m%d')}.json"
+          with open(f'data/exams/{answer_sheet_filename}', 'w', encoding='utf-8') as f:
+              json.dump(answer_sheet, f, ensure_ascii=False, indent=2)
+          
+          print("✅ 增强试卷生成完成！")
+          print(f"   试卷ID: {exam['exam_id']}")
+          print(f"   题目数量: {len(selected_questions)}")
+          print(f"   总分: {total_points}")
+          print(f"   考试时长: {exam_duration}分钟")
+          print(f"   难度: {adaptive_difficulty}（自适应: {adaptive_mode}）")
+          print(f"   预计完成时间: {total_time}分钟")
+          print("\n📋 题型分布:")
+          for qtype, count in type_distribution.items():
+              if count > 0:
+                  print(f"   {qtype}: {count}题")
+          print(f"\n📊 知识点覆盖: {len(exam['statistics']['knowledge_points_coverage'])}个")
+          print(f"\n📄 文件: {exam_filename}, {answer_sheet_filename}")
+          EOF
+      
+      - name: 提交试卷文件
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add data/exams/ data/exam_history/
+          git diff --quiet && git diff --staged --quiet || git commit -m "📝 生成增强试卷 [自动运行]"
+          git push

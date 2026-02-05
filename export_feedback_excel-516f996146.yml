@@ -1,0 +1,360 @@
+name: 导出反馈数据到Excel
+
+on:
+  workflow_dispatch:
+    inputs:
+      date_range:
+        description: '日期范围（天数）'
+        required: false
+        type: choice
+        options:
+          - 7天
+          - 30天
+          - 90天
+          - 180天
+          - 全部
+        default: '30天'
+      include_closed:
+        description: '包含已关闭的反馈'
+        required: false
+        type: boolean
+        default: true
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  export_excel:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+      
+      - name: 设置Python环境
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: 安装Python依赖
+        run: |
+          pip install pygithub requests pandas openpyxl
+      
+      - name: 运行Excel导出脚本
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          DATE_RANGE: ${{ github.event.inputs.date_range }}
+          INCLUDE_CLOSED: ${{ github.event.inputs.include_closed }}
+        run: |
+          python << 'EOF'
+          import json
+          import os
+          from datetime import datetime, timedelta
+          from github import Github
+          import pandas as pd
+          
+          # 初始化GitHub客户端
+          token = os.environ['GITHUB_TOKEN']
+          repo_name = os.environ['GITHUB_REPOSITORY']
+          date_range_str = os.environ.get('DATE_RANGE', '30天')
+          include_closed = os.environ.get('INCLUDE_CLOSED', 'true').lower() == 'true'
+          
+          g = Github(token)
+          repo = g.get_repo(repo_name)
+          
+          print(f"📊 开始导出反馈数据到Excel...")
+          print(f"📂 仓库：{repo_name}")
+          print(f"📅 日期范围：{date_range_str}")
+          print(f"🔍 包含已关闭反馈：{include_closed}")
+          
+          # 解析日期范围
+          date_map = {
+              '7天': 7,
+              '30天': 30,
+              '90天': 90,
+              '180天': 180,
+              '全部': None
+          }
+          days = date_map.get(date_range_str)
+          
+          # 计算截止日期
+          if days:
+              cutoff_date = datetime.now() - timedelta(days=days)
+              print(f"📅 起始日期：{cutoff_date.strftime('%Y-%m-%d')}")
+          
+          # 获取所有反馈Issues
+          print("🔍 获取反馈Issues...")
+          issues = repo.get_issues(state='all')
+          
+          # 准备数据结构
+          feedback_data = []
+          course_stats = {}
+          student_stats = {}
+          
+          # 遍历Issues
+          for issue in issues:
+              # 跳过非反馈Issue
+              if not any(label.name == '反馈' for label in issue.labels):
+                  continue
+              
+              # 过滤日期
+              if days and issue.created_at.replace(tzinfo=None) < cutoff_date:
+                  continue
+              
+              # 过滤已关闭的反馈
+              if not include_closed and issue.state == 'closed':
+                  continue
+              
+              # 解析Issue内容
+              body = issue.body or ''
+              created_at = issue.created_at
+              updated_at = issue.updated_at
+              
+              # 提取信息
+              course = '未知课程'
+              chapter = '未知章节'
+              student_name = '匿名学生'
+              student_id = ''
+              difficulty = 3
+              feedback_type = '课程反馈'
+              
+              # 解析字段
+              for line in body.split('\n'):
+                  line = line.strip()
+                  if '课程名称' in line or '课程' in line:
+                      if '：' in line or ':' in line:
+                          parts = line.split('：') if '：' in line else line.split(':')
+                          if len(parts) > 1:
+                              course = parts[-1].strip()
+                  elif '章节' in line or 'Chapter' in line.lower():
+                      if '：' in line or ':' in line:
+                          parts = line.split('：') if '：' in line else line.split(':')
+                          if len(parts) > 1:
+                              chapter = parts[-1].strip()
+                  elif '姓名' in line or '学生' in line or 'Name' in line.lower():
+                      if '：' in line or ':' in line:
+                          parts = line.split('：') if '：' in line else line.split(':')
+                          if len(parts) > 1:
+                              student_name = parts[-1].strip()
+                  elif '学号' in line or 'ID' in line:
+                      if '：' in line or ':' in line:
+                          parts = line.split('：') if '：' in line else line.split(':')
+                          if len(parts) > 1:
+                              student_id = parts[-1].strip()
+                  elif '难度' in line or 'Difficulty' in line.lower():
+                      if '：' in line or ':' in line:
+                          parts = line.split('：') if '：' in line else line.split(':')
+                          if len(parts) > 1:
+                              try:
+                                  difficulty = int(parts[-1].strip().replace('分', ''))
+                                  difficulty = max(1, min(5, difficulty))
+                              except:
+                                  difficulty = 3
+                  elif '反馈类型' in line or 'Type' in line.lower():
+                      if '：' in line or ':' in line:
+                          parts = line.split('：') if '：' in line else line.split(':')
+                          if len(parts) > 1:
+                              feedback_type = parts[-1].strip()
+              
+              # 难度等级标签
+              difficulty_labels = {1: '容易', 2: '一般', 3: '困难', 4: '非常困难', 5: '极难'}
+              
+              # 构建反馈记录
+              record = {
+                  'Issue编号': issue.number,
+                  '标题': issue.title,
+                  '课程名称': course,
+                  '章节': chapter,
+                  '学生姓名': student_name,
+                  '学号': student_id,
+                  '反馈类型': feedback_type,
+                  '难度评分': difficulty,
+                  '难度等级': difficulty_labels.get(difficulty, '困难'),
+                  '反馈内容': body,
+                  '状态': issue.state,
+                  '创建时间': created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                  '最后更新': updated_at.strftime('%Y-%m-%d %H:%M:%S'),
+                  'GitHub链接': issue.html_url
+              }
+              
+              feedback_data.append(record)
+              
+              # 统计课程数据
+              if course not in course_stats:
+                  course_stats[course] = {
+                      '反馈数': 0,
+                      '平均难度': 0,
+                      '学生数': set(),
+                      '难度分布': {'容易': 0, '一般': 0, '困难': 0, '非常困难': 0, '极难': 0}
+                  }
+              
+              course_stats[course]['反馈数'] += 1
+              course_stats[course]['学生数'].add(student_name)
+              course_stats[course]['难度分布'][difficulty_labels.get(difficulty, '困难')] += 1
+              
+              # 统计学生数据
+              student_key = f"{student_name}_{student_id}" if student_id else student_name
+              if student_key not in student_stats:
+                  student_stats[student_key] = {
+                      '姓名': student_name,
+                      '学号': student_id,
+                      '反馈次数': 0,
+                      '平均难度': 0,
+                      '难度列表': []
+                  }
+              
+              student_stats[student_key]['反馈次数'] += 1
+              student_stats[student_key]['难度列表'].append(difficulty)
+          
+          # 计算平均难度
+          for course in course_stats:
+              stats = course_stats[course]
+              if stats['反馈数'] > 0:
+                  total_difficulty = sum([
+                      (1 * stats['难度分布']['容易']) +
+                      (2 * stats['难度分布']['一般']) +
+                      (3 * stats['难度分布']['困难']) +
+                      (4 * stats['难度分布']['非常困难']) +
+                      (5 * stats['难度分布']['极难'])
+                  ])
+                  stats['平均难度'] = round(total_difficulty / stats['反馈数'], 2)
+              stats['学生数'] = len(stats['学生数'])
+          
+          for student_key in student_stats:
+              stats = student_stats[student_key]
+              if stats['难度列表']:
+                  stats['平均难度'] = round(sum(stats['难度列表']) / len(stats['难度列表']), 2)
+              del stats['难度列表']
+          
+          # 生成Excel文件
+          if feedback_data:
+              timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+              output_dir = 'data/excel'
+              os.makedirs(output_dir, exist_ok=True)
+              
+              # 1. 创建反馈明细表
+              print("📝 生成反馈明细表...")
+              df_feedback = pd.DataFrame(feedback_data)
+              df_feedback = df_feedback.sort_values(by='创建时间', ascending=False)
+              
+              # 2. 创建课程统计表
+              print("📚 生成课程统计表...")
+              course_data = []
+              for course, stats in course_stats.items():
+                  course_data.append({
+                      '课程名称': course,
+                      '反馈总数': stats['反馈数'],
+                      '参与学生数': stats['学生数'],
+                      '平均难度': stats['平均难度'],
+                      '容易（1分）': stats['难度分布']['容易'],
+                      '一般（2分）': stats['难度分布']['一般'],
+                      '困难（3分）': stats['难度分布']['困难'],
+                      '非常困难（4分）': stats['难度分布']['非常困难'],
+                      '极难（5分）': stats['难度分布']['极难']
+                  })
+              
+              df_course = pd.DataFrame(course_data)
+              df_course = df_course.sort_values(by='反馈总数', ascending=False)
+              
+              # 3. 创建学生统计表
+              print("👥 生成学生统计表...")
+              student_data = []
+              for student_key, stats in student_stats.items():
+                  student_data.append({
+                      '学生姓名': stats['姓名'],
+                      '学号': stats['学号'],
+                      '反馈次数': stats['反馈次数'],
+                      '平均难度': stats['平均难度']
+                  })
+              
+              df_student = pd.DataFrame(student_data)
+              df_student = df_student.sort_values(by='反馈次数', ascending=False)
+              
+              # 4. 生成每日趋势数据
+              print("📈 生成每日趋势表...")
+              daily_trends = {}
+              for record in feedback_data:
+                  date = record['创建时间'].split(' ')[0]
+                  if date not in daily_trends:
+                      daily_trends[date] = {'反馈数': 0, '总难度': 0, '计数': 0}
+                  
+                  daily_trends[date]['反馈数'] += 1
+                  daily_trends[date]['总难度'] += record['难度评分']
+                  daily_trends[date]['计数'] += 1
+              
+              trend_data = []
+              for date in sorted(daily_trends.keys(), reverse=True):
+                  trends = daily_trends[date]
+                  avg_difficulty = round(trends['总难度'] / trends['计数'], 2) if trends['计数'] > 0 else 0
+                  trend_data.append({
+                      '日期': date,
+                      '反馈数量': trends['反馈数'],
+                      '平均难度': avg_difficulty
+                  })
+              
+              df_trend = pd.DataFrame(trend_data)
+              
+              # 5. 创建Excel文件
+              print("📊 生成Excel文件...")
+              excel_path = os.path.join(output_dir, f'反馈数据报表_{timestamp}.xlsx')
+              
+              with pd.ExcelWriter(excel_path, engine='openpyxl') as writer:
+                  df_feedback.to_excel(writer, sheet_name='反馈明细', index=False)
+                  df_course.to_excel(writer, sheet_name='课程统计', index=False)
+                  df_student.to_excel(writer, sheet_name='学生统计', index=False)
+                  df_trend.to_excel(writer, sheet_name='每日趋势', index=False)
+              
+              print(f"✅ Excel文件已生成：{excel_path}")
+              print(f"📊 数据统计：")
+              print(f"   - 反馈总数：{len(feedback_data)}")
+              print(f"   - 课程数量：{len(course_stats)}")
+              print(f"   - 学生数量：{len(student_stats)}")
+              print(f"   - 时间跨度：{len(trend_data)}天")
+              
+              # 保存元数据
+              metadata = {
+                  'export_time': datetime.now().isoformat(),
+                  'file_path': excel_path,
+                  'parameters': {
+                      'date_range': date_range_str,
+                      'include_closed': include_closed
+                  },
+                  'statistics': {
+                      'total_feedback': len(feedback_data),
+                      'courses_count': len(course_stats),
+                      'students_count': len(student_stats),
+                      'days_span': len(trend_data)
+                  }
+              }
+              
+              with open(f'{output_dir}/metadata_{timestamp}.json', 'w', encoding='utf-8') as f:
+                  json.dump(metadata, f, ensure_ascii=False, indent=2)
+              
+          else:
+              print("⚠️ 没有找到符合条件的数据")
+          
+          EOF
+      
+      - name: 提交Excel文件
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add data/excel/
+          git diff --quiet && git diff --staged --quiet || git commit -m "📊 导出反馈数据Excel [${{ github.event.inputs.date_range }}]"
+          git push
+      
+      - name: 生成下载链接
+        run: |
+          echo "📥 Excel文件下载地址：" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -d "data/excel" ]; then
+              for file in $(ls -t data/excel/*.xlsx | head -1); do
+                  filename=$(basename "$file")
+                  echo "📄 **$filename**" >> $GITHUB_STEP_SUMMARY
+                  echo "" >> $GITHUB_STEP_SUMMARY
+                  echo "下载路径：\`data/excel/$filename\`" >> $GITHUB_STEP_SUMMARY
+                  echo "" >> $GITHUB_STEP_SUMMARY
+              done
+          fi

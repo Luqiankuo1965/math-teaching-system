@@ -1,0 +1,317 @@
+name: 生成数学试卷
+
+on:
+  # 每周日上午8点自动生成（北京时间下午4点）
+  schedule:
+    - cron: '0 8 * * 0'
+  
+  # 手动触发
+  workflow_dispatch:
+    inputs:
+      exam_type:
+        description: '试卷类型'
+        required: true
+        type: choice
+        options:
+          - 单元测试
+          - 期中考试
+          - 期末考试
+          - 随机练习
+        default: '单元测试'
+      question_count:
+        description: '题目数量'
+        required: true
+        type: number
+        default: 10
+      difficulty:
+        description: '难度等级 (1-5)'
+        required: true
+        type: number
+        default: 3
+
+permissions:
+  contents: write
+  issues: read
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+      
+      - name: 设置Python环境
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: 安装依赖
+        run: |
+          pip install pygithub requests numpy
+      
+      - name: 创建数据目录
+        run: mkdir -p data
+      
+      - name: 运行试卷生成脚本
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          EXAM_TYPE: ${{ github.event.inputs.exam_type || '单元测试' }}
+          QUESTION_COUNT: ${{ github.event.inputs.question_count || 10 }}
+          DIFFICULTY: ${{ github.event.inputs.difficulty || 3 }}
+        run: |
+          python << 'EOF'
+          import json
+          import os
+          import random
+          from datetime import datetime
+          from github import Github
+          
+          # 初始化GitHub客户端
+          token = os.environ['GITHUB_TOKEN']
+          repo_name = os.environ['GITHUB_REPOSITORY']
+          g = Github(token)
+          repo = g.get_repo(repo_name)
+          
+          # 获取输入参数
+          exam_type = os.environ.get('EXAM_TYPE', '单元测试')
+          question_count = int(os.environ.get('QUESTION_COUNT', 10))
+          target_difficulty = int(os.environ.get('DIFFICULTY', 3))
+          
+          print(f"📝 开始生成{exam_type}试卷...")
+          print(f"   题目数量: {question_count}")
+          print(f"   目标难度: {target_difficulty}")
+          
+          # 数学题库（包含LaTeX公式）
+          question_bank = {
+              '微积分': [
+                  {
+                      'id': 1,
+                      'type': '单选题',
+                      'content': r'计算极限：$$\lim_{x\to 0} \frac{\sin x}{x}$$',
+                      'options': ['0', '1', '∞', '不存在'],
+                      'answer': 1,  # 索引，从0开始
+                      'difficulty': 1,
+                      'points': 5
+                  },
+                  {
+                      'id': 2,
+                      'type': '单选题',
+                      'content': r'求导数：$\frac{d}{dx}(e^x + x^2)$',
+                      'options': [r'$e^x + 2x$', r'$e^x + x$', r'$e^{2x} + 2x$', r'$e^x \cdot 2x$'],
+                      'answer': 0,
+                      'difficulty': 2,
+                      'points': 5
+                  },
+                  {
+                      'id': 3,
+                      'type': '计算题',
+                      'content': r'计算不定积分：$\int x^2 e^x dx$',
+                      'answer': r'$x^2 e^x - 2\int x e^x dx$ 或 $e^x(x^2 - 2x + 2) + C$',
+                      'difficulty': 3,
+                      'points': 10
+                  },
+                  {
+                      'id': 4,
+                      'type': '计算题',
+                      'content': r'求定积分：$\int_{0}^{\pi} \sin x dx$',
+                      'answer': '2',
+                      'difficulty': 1,
+                      'points': 8
+                  },
+                  {
+                      'id': 5,
+                      'type': '计算题',
+                      'content': r'求函数 $f(x) = x^3 - 3x^2 + 2$ 的极值',
+                      'answer': r'极大值 $f(0)=2$，极小值 $f(2)=-2$',
+                      'difficulty': 4,
+                      'points': 12
+                  },
+                  {
+                      'id': 6,
+                      'type': '计算题',
+                      'content': r'计算极限：$$\lim_{x\to \infty} \frac{2x^2 + x}{3x^2 - 5}$$',
+                      'answer': r'$\frac{2}{3}$',
+                      'difficulty': 2,
+                      'points': 8
+                  }
+              ],
+              '线性代数': [
+                  {
+                      'id': 7,
+                      'type': '单选题',
+                      'content': r'设 $A = \begin{pmatrix} 1 & 2 \\ 3 & 4 \end{pmatrix}$，则 $|A|$ 等于',
+                      'options': ['-2', '2', '-10', '10'],
+                      'answer': 0,
+                      'difficulty': 1,
+                      'points': 5
+                  },
+                  {
+                      'id': 8,
+                      'type': '计算题',
+                      'content': r'求矩阵 $A = \begin{pmatrix} 1 & 2 \\ 3 & 4 \end{pmatrix}$ 的逆矩阵',
+                      'answer': r'$\begin{pmatrix} -2 & 1 \\ 1.5 & -0.5 \end{pmatrix}$',
+                      'difficulty': 3,
+                      'points': 10
+                  },
+                  {
+                      'id': 9,
+                      'type': '计算题',
+                      'content': r'求行列式 $D = \begin{vmatrix} 1 & 2 & 3 \\ 4 & 5 & 6 \\ 7 & 8 & 9 \end{vmatrix}$ 的值',
+                      'answer': '0',
+                      'difficulty': 2,
+                      'points': 8
+                  }
+              ],
+              '概率统计': [
+                  {
+                      'id': 10,
+                      'type': '单选题',
+                      'content': r'设 $X \sim N(0,1)$，则 $P(X \leq 1.96)$ 约等于',
+                      'options': ['0.90', '0.95', '0.975', '0.99'],
+                      'answer': 2,
+                      'difficulty': 2,
+                      'points': 5
+                  },
+                  {
+                      'id': 11,
+                      'type': '计算题',
+                      'content': r'设 $X \sim B(n,p)$，求 $E(X)$ 和 $D(X)$',
+                      'answer': r'$E(X) = np$, $D(X) = np(1-p)$',
+                      'difficulty': 2,
+                      'points': 10
+                  }
+              ],
+              '微分方程': [
+                  {
+                      'id': 12,
+                      'type': '计算题',
+                      'content': r'求微分方程 $\frac{dy}{dx} = \frac{y}{x}$ 的通解',
+                      'answer': r'$y = Cx$，其中 $C$ 为常数',
+                      'difficulty': 1,
+                      'points': 8
+                  },
+                  {
+                      'id': 13,
+                      'type': '计算题',
+                      'content': r'解微分方程 $y'' + 4y = 0$',
+                      'answer': r'$y = C_1 \cos 2x + C_2 \sin 2x$',
+                      'difficulty': 3,
+                      'points': 12
+                  }
+              ]
+          }
+          
+          # 从GitHub Issues获取题库
+          print("🔍 从题库Issues获取题目...")
+          try:
+              issues = repo.get_issues(state='all', labels=['题库'])
+              custom_questions = []
+              
+              for issue in issues:
+                  if not any(label.name == '题库' for label in issue.labels):
+                      continue
+                  
+                  body = issue.body or ''
+                  question = {
+                      'id': issue.number,
+                      'type': '计算题',
+                      'content': body,
+                      'answer': '见Issue评论',
+                      'difficulty': 3,
+                      'points': 10
+                  }
+                  
+                  # 尝试解析难度
+                  for line in body.split('\n'):
+                      if '难度' in line:
+                          try:
+                              question['difficulty'] = int(line.split('：')[-1].split(':')[-1].strip().replace('分', ''))
+                          except:
+                              pass
+                  
+                  custom_questions.append(question)
+              
+              if custom_questions:
+                  print(f"   找到 {len(custom_questions)} 道自定义题目")
+                  question_bank['自定义'] = custom_questions
+              
+          except Exception as e:
+              print(f"   获取自定义题库失败: {e}")
+          
+          # 选择题目
+          all_questions = []
+          for chapter, questions in question_bank.items():
+              for q in questions:
+                  q['chapter'] = chapter
+                  all_questions.append(q)
+          
+          # 按难度筛选
+          difficulty_range = max(1, target_difficulty - 1)
+          filtered_questions = [q for q in all_questions if 
+                               abs(q['difficulty'] - target_difficulty) <= difficulty_range]
+          
+          if not filtered_questions:
+              filtered_questions = all_questions
+          
+          # 随机选择题目
+          selected_questions = random.sample(filtered_questions, 
+                                             min(question_count, len(filtered_questions)))
+          
+          # 计算总分
+          total_points = sum(q['points'] for q in selected_questions)
+          
+          # 生成试卷JSON
+          exam = {
+              'exam_id': datetime.now().strftime('%Y%m%d%H%M%S'),
+              'exam_type': exam_type,
+              'created_at': datetime.now().isoformat(),
+              'duration': 120,  # 考试时长（分钟）
+              'total_points': total_points,
+              'question_count': len(selected_questions),
+              'difficulty_level': target_difficulty,
+              'questions': selected_questions
+          }
+          
+          # 保存试卷
+          with open('data/math_exam.json', 'w', encoding='utf-8') as f:
+              json.dump(exam, f, ensure_ascii=False, indent=2)
+          
+          # 生成历史记录
+          history_file = 'data/exam_history.json'
+          try:
+              with open(history_file, 'r', encoding='utf-8') as f:
+                  history = json.load(f)
+          except:
+              history = []
+          
+          history.append({
+              'exam_id': exam['exam_id'],
+              'exam_type': exam_type,
+              'created_at': exam['created_at'],
+              'question_count': len(selected_questions),
+              'total_points': total_points
+          })
+          
+          with open(history_file, 'w', encoding='utf-8') as f:
+              json.dump(history, f, ensure_ascii=False, indent=2)
+          
+          print("✅ 试卷生成完成！")
+          print(f"   题目数量: {len(selected_questions)}")
+          print(f"   总分: {total_points}")
+          print(f"   考试时长: {exam['duration']}分钟")
+          print("\n📋 试卷概览：")
+          for i, q in enumerate(selected_questions[:5], 1):
+              print(f"   {i}. [{q['chapter']}] {q['type']} - {q['points']}分")
+          if len(selected_questions) > 5:
+              print(f"   ... 共{len(selected_questions)}道题")
+          EOF
+      
+      - name: 提交试卷文件
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add data/math_exam.json data/exam_history.json
+          git diff --quiet && git diff --staged --quiet || git commit -m "📝 生成新试卷 [自动运行]"
+          git push

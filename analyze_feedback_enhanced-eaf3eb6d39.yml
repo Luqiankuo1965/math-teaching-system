@@ -1,0 +1,512 @@
+name: 学生反馈深度分析系统（增强版）
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # 每天0点运行
+  workflow_dispatch:
+    inputs:
+      analysis_type:
+        description: '分析类型'
+        required: true
+        type: choice
+        options:
+          - 完整分析
+          - 仅生成报告
+          - 仅发送通知
+          - 学生学习轨迹
+        default: '完整分析'
+
+permissions:
+  contents: write
+  issues: read
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+      
+      - name: 设置Python环境
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: 安装依赖
+        run: |
+          pip install pygithub requests pandas matplotlib seaborn numpy
+          
+      - name: 创建数据目录
+        run: mkdir -p data/reports data/charts data/alerts
+      
+      - name: 运行增强分析脚本
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          ANALYSIS_TYPE: ${{ github.event.inputs.analysis_type || '完整分析' }}
+        run: |
+          python << 'EOF'
+          import json
+          import os
+          from datetime import datetime, timedelta
+          from github import Github
+          import math
+          
+          # 初始化
+          token = os.environ['GITHUB_TOKEN']
+          repo_name = os.environ['GITHUB_REPOSITORY']
+          g = Github(token)
+          repo = g.get_repo(repo_name)
+          analysis_type = os.environ.get('ANALYSIS_TYPE', '完整分析')
+          
+          print(f"🔍 开始{analysis_type}...")
+          
+          # 获取所有反馈Issues
+          issues = repo.get_issues(state='all', labels=['反馈'])
+          
+          # 数据结构
+          stats = {
+              'last_updated': datetime.now().isoformat(),
+              'analysis_type': analysis_type,
+              'total_issues': 0,
+              'courses': {},
+              'students': {},
+              'daily_stats': {},
+              'weekly_stats': {},
+              'monthly_stats': {},
+              'issues_detail': [],
+              # 新增：高级分析
+              'learning_trajectory': {},  # 学习轨迹
+              'difficulty_trend': {},     # 难度趋势
+              'engagement_score': {},     # 参与度评分
+              'at_risk_students': [],     # 高风险学生
+              'course_effectiveness': {}, # 课程有效性
+              'feedback_sentiment': {},   # 反馈情感分析
+              'time_patterns': {},        # 时间模式
+              'correlation_analysis': {}  # 关联性分析
+          }
+          
+          # 初始化日期统计
+          today = datetime.now()
+          for i in range(90):
+              date = (today - timedelta(days=i)).strftime('%Y-%m-%d')
+              stats['daily_stats'][date] = {
+                  'count': 0,
+                  'avg_difficulty': 0,
+                  'difficulty_distribution': {'1': 0, '2': 0, '3': 0, '4': 0, '5': 0}
+              }
+          
+          for i in range(24):
+              year, week, _ = (today - timedelta(weeks=i)).isocalendar()
+              week_key = f"{year}-W{week:02d}"
+              stats['weekly_stats'][week_key] = {
+                  'count': 0,
+                  'avg_difficulty': 0,
+                  'unique_students': set()
+              }
+          
+          for i in range(12):
+              month = (today.replace(day=1) - timedelta(days=i*30)).strftime('%Y-%m')
+              stats['monthly_stats'][month] = {
+                  'count': 0,
+                  'avg_difficulty': 0,
+                  'unique_students': set()
+              }
+          
+          # 学习轨迹数据
+          student_learning_data = {}
+          course_feedback_data = {}
+          
+          # 遍历Issues
+          for issue in issues:
+              if not any(label.name == '反馈' for label in issue.labels):
+                  continue
+              
+              stats['total_issues'] += 1
+              
+              body = issue.body or ''
+              created_at = issue.created_at
+              date_key = created_at.strftime('%Y-%m-%d')
+              year, week, _ = created_at.isocalendar()
+              week_key = f"{year}-W{02d}" if week < 10 else f"{year}-W{week}"
+              month_key = created_at.strftime('%Y-%m')
+              
+              # 提取信息
+              course = '未知课程'
+              student_name = '匿名学生'
+              difficulty = 3
+              learning_progress = 50  # 学习进度百分比
+              understanding_level = 3  # 理解程度 1-5
+              time_spent = 30  # 学习时长（分钟）
+              sentiment = '中性'  # 情感倾向
+              
+              for line in body.split('\n'):
+                  line_lower = line.lower()
+                  if '课程' in line or 'course' in line_lower:
+                      course = line.split('：')[-1].split(':')[-1].strip()
+                  elif '姓名' in line or 'name' in line_lower:
+                      student_name = line.split('：')[-1].split(':')[-1].strip()
+                  elif '难度' in line or 'difficulty' in line_lower:
+                      try:
+                          difficulty = int(line.split('：')[-1].split(':')[-1].strip().replace('分', '').replace('级', ''))
+                      except:
+                          difficulty = 3
+                  elif '进度' in line or 'progress' in line_lower:
+                      try:
+                          learning_progress = int(line.split('：')[-1].split(':')[-1].strip().replace('%', ''))
+                      except:
+                          pass
+                  elif '理解' in line or 'understanding' in line_lower:
+                      try:
+                          understanding_level = int(line.split('：')[-1].split(':')[-1].strip().replace('分', '').replace('级', ''))
+                      except:
+                          understanding_level = 3
+                  elif '时长' in line or 'time' in line_lower:
+                      try:
+                          time_spent = int(line.split('：')[-1].split(':')[-1].strip().replace('分钟', '').replace('min', ''))
+                      except:
+                          time_spent = 30
+                  elif '情感' in line or 'sentiment' in line_lower or '感受' in line:
+                      sentiment = line.split('：')[-1].split(':')[-1].strip()
+              
+              # 统计课程
+              if course not in stats['courses']:
+                  stats['courses'][course] = {
+                      'total_feedback': 0,
+                      'student_count': 0,
+                      'difficulty': {'1': 0, '2': 0, '3': 0, '4': 0, '5': 0},
+                      'avg_progress': 0,
+                      'avg_understanding': 0,
+                      'avg_time_spent': 0,
+                      'effectiveness_score': 0,  # 课程有效性评分
+                      'sentiment_distribution': {'积极': 0, '中性': 0, '消极': 0}
+                  }
+              
+              stats['courses'][course]['total_feedback'] += 1
+              
+              # 累加学习数据
+              stats['courses'][course]['avg_progress'] += learning_progress
+              stats['courses'][course]['avg_understanding'] += understanding_level
+              stats['courses'][course]['avg_time_spent'] += time_spent
+              
+              # 统计情感
+              if sentiment in stats['courses'][course]['sentiment_distribution']:
+                  stats['courses'][course]['sentiment_distribution'][sentiment] += 1
+              else:
+                  stats['courses'][course]['sentiment_distribution']['中性'] += 1
+              
+              # 记录学生
+              if course not in stats['courses'][course].get('students', set()):
+                  stats['courses'][course]['student_count'] += 1
+                  stats['courses'][course]['students'] = set()
+              stats['courses'][course]['students'].add(student_name)
+              
+              # 统计难度
+              difficulty_key = str(max(1, min(5, difficulty)))
+              stats['courses'][course]['difficulty'][difficulty_key] += 1
+              
+              # 学习轨迹数据
+              if student_name not in student_learning_data:
+                  student_learning_data[student_name] = []
+              
+              student_learning_data[student_name].append({
+                  'date': date_key,
+                  'course': course,
+                  'difficulty': difficulty,
+                  'progress': learning_progress,
+                  'understanding': understanding_level,
+                  'time_spent': time_spent,
+                  'sentiment': sentiment
+              })
+              
+              # 课程反馈数据
+              if course not in course_feedback_data:
+                  course_feedback_data[course] = []
+              course_feedback_data[course].append({
+                  'date': date_key,
+                  'difficulty': difficulty,
+                  'progress': learning_progress,
+                  'understanding': understanding_level,
+                  'sentiment': sentiment
+              })
+              
+              # 统计学生
+              if student_name not in stats['students']:
+                  stats['students'][student_name] = {
+                      'name': student_name,
+                      'total_feedback': 0,
+                      'courses': set(),
+                      'avg_difficulty': 0,
+                      'total_time_spent': 0,
+                      'avg_progress': 0,
+                      'avg_understanding': 0,
+                      'engagement_score': 0,  # 参与度评分
+                      'learning_trend': 'stable',  # 学习趋势：rising, stable, declining
+                      'at_risk': False
+                  }
+              
+              stats['students'][student_name]['total_feedback'] += 1
+              stats['students'][student_name]['courses'].add(course)
+              stats['students'][student_name]['total_time_spent'] += time_spent
+              stats['students'][student_name]['avg_progress'] += learning_progress
+              stats['students'][student_name]['avg_understanding'] += understanding_level
+              
+              # 每日统计
+              if date_key in stats['daily_stats']:
+                  stats['daily_stats'][date_key]['count'] += 1
+                  stats['daily_stats'][date_key]['difficulty_distribution'][difficulty_key] += 1
+              
+              # 每周统计
+              if week_key in stats['weekly_stats']:
+                  stats['weekly_stats'][week_key]['count'] += 1
+                  stats['weekly_stats'][week_key]['unique_students'].add(student_name)
+              
+              # 每月统计
+              if month_key in stats['monthly_stats']:
+                  stats['monthly_stats'][month_key]['count'] += 1
+                  stats['monthly_stats'][month_key]['unique_students'].add(student_name)
+              
+              # 保存详情
+              stats['issues_detail'].append({
+                  'id': issue.number,
+                  'title': issue.title,
+                  'course': course,
+                  'student': student_name,
+                  'difficulty': difficulty,
+                  'progress': learning_progress,
+                  'understanding': understanding_level,
+                  'time_spent': time_spent,
+                  'sentiment': sentiment,
+                  'created_at': created_at.isoformat(),
+                  'state': issue.state
+              })
+          
+          # ========== 高级分析 ==========
+          
+          # 1. 计算课程平均值
+          for course in stats['courses']:
+              feedback_count = stats['courses'][course]['total_feedback']
+              if feedback_count > 0:
+                  stats['courses'][course]['avg_progress'] = round(
+                      stats['courses'][course]['avg_progress'] / feedback_count, 2
+                  )
+                  stats['courses'][course]['avg_understanding'] = round(
+                      stats['courses'][course]['avg_understanding'] / feedback_count, 2
+                  )
+                  stats['courses'][course]['avg_time_spent'] = round(
+                      stats['courses'][course]['avg_time_spent'] / feedback_count, 2
+                  )
+              
+              # 计算课程有效性评分
+              # 评分 = (平均理解程度 × 0.4) + (平均学习进度 × 0.3) + (积极情感比例 × 0.3)
+              total_sentiments = sum(stats['courses'][course]['sentiment_distribution'].values())
+              positive_ratio = stats['courses'][course]['sentiment_distribution'].get('积极', 0) / max(total_sentiments, 1)
+              
+              stats['courses'][course]['effectiveness_score'] = round(
+                  (stats['courses'][course]['avg_understanding'] * 0.4 +
+                   stats['courses'][course]['avg_progress'] / 100 * 0.3 +
+                   positive_ratio * 0.3) * 20,  # 转换为100分制
+                  1
+              )
+              
+              # 清理临时set
+              if 'students' in stats['courses'][course]:
+                  del stats['courses'][course]['students']
+          
+          # 2. 计算学生平均值和参与度评分
+          for student_name in stats['students']:
+              feedback_count = stats['students'][student_name]['total_feedback']
+              if feedback_count > 0:
+                  stats['students'][student_name]['avg_difficulty'] = round(
+                      sum(d['difficulty'] for d in student_learning_data[student_name]) / feedback_count, 2
+                  )
+                  stats['students'][student_name]['avg_progress'] = round(
+                      stats['students'][student_name]['avg_progress'] / feedback_count, 2
+                  )
+                  stats['students'][student_name]['avg_understanding'] = round(
+                      stats['students'][student_name]['avg_understanding'] / feedback_count, 2
+                  )
+              
+              # 参与度评分
+              # 评分 = (反馈次数 × 0.3) + (课程数量 × 0.2) + (总学习时长/100 × 0.3) + (平均进度/100 × 0.2)
+              course_count = len(stats['students'][student_name]['courses'])
+              stats['students'][student_name]['engagement_score'] = round(
+                  min(100, 
+                      feedback_count * 3 +  # 每次反馈+3分
+                      course_count * 10 +  # 每门课+10分
+                      min(stats['students'][student_name]['total_time_spent'] / 100 * 10, 30) +  # 时长最多30分
+                      stats['students'][student_name]['avg_progress'] * 0.2  # 进度最多20分
+                  ),
+                  1
+              )
+              
+              # 转换courses为list
+              stats['students'][student_name]['courses'] = list(stats['students'][student_name]['courses'])
+          
+          # 3. 学习轨迹分析
+          for student_name, data in student_learning_data.items():
+              # 按日期排序
+              data.sort(key=lambda x: x['date'])
+              
+              if len(data) >= 2:
+                  # 比较最近3次和前3次的平均理解程度
+                  recent_avg = sum(d['understanding'] for d in data[-3:]) / min(3, len(data))
+                  early_avg = sum(d['understanding'] for d in data[:3]) / min(3, len(data))
+                  
+                  if recent_avg > early_avg + 0.5:
+                      stats['students'][student_name]['learning_trend'] = 'rising'
+                  elif recent_avg < early_avg - 0.5:
+                      stats['students'][student_name]['learning_trend'] = 'declining'
+                  else:
+                      stats['students'][student_name]['learning_trend'] = 'stable'
+              
+              stats['learning_trajectory'][student_name] = data
+          
+          # 4. 识别高风险学生
+          for student_name, student in stats['students'].items():
+              risk_factors = 0
+              
+              # 因素1：参与度评分低
+              if student['engagement_score'] < 40:
+                  risk_factors += 1
+              
+              # 因素2：学习进度低
+              if student['avg_progress'] < 50:
+                  risk_factors += 1
+              
+              # 因素3：理解程度低
+              if student['avg_understanding'] < 2.5:
+                  risk_factors += 1
+              
+              # 因素4：学习趋势下降
+              if student['learning_trend'] == 'declining':
+                  risk_factors += 1
+              
+              # 因素5：近期未反馈（超过7天）
+              if student_name in student_learning_data:
+                  last_feedback = student_learning_data[student_name][-1]['date']
+                  days_since_last = (datetime.now() - datetime.strptime(last_feedback, '%Y-%m-%d')).days
+                  if days_since_last > 7:
+                      risk_factors += 1
+              
+              student['at_risk'] = risk_factors >= 3
+              if student['at_risk']:
+                  stats['at_risk_students'].append({
+                      'name': student_name,
+                      'risk_factors': risk_factors,
+                      'engagement_score': student['engagement_score'],
+                      'avg_progress': student['avg_progress'],
+                      'learning_trend': student['learning_trend']
+                  })
+          
+          # 5. 计算每日平均难度
+          for date in stats['daily_stats']:
+              day_data = stats['daily_stats'][date]
+              total = sum(day_data['difficulty_distribution'].values())
+              if total > 0:
+                  weighted_sum = sum(
+                      int(level) * count 
+                      for level, count in day_data['difficulty_distribution'].items()
+                  )
+                  day_data['avg_difficulty'] = round(weighted_sum / total, 2)
+          
+          # 6. 计算每周平均难度和唯一学生数
+          for week in stats['weekly_stats']:
+              week_data = stats['weekly_stats'][week]
+              week_data['unique_students'] = len(week_data['unique_students'])
+          
+          # 7. 计算每月平均难度和唯一学生数
+          for month in stats['monthly_stats']:
+              month_data = stats['monthly_stats'][month]
+              month_data['unique_students'] = len(month_data['unique_students'])
+          
+          # 8. 生成课程有效性排名
+          stats['course_effectiveness'] = dict(sorted(
+              {course: data['effectiveness_score'] 
+               for course, data in stats['courses'].items()}.items(),
+              key=lambda x: x[1],
+              reverse=True
+          ))
+          
+          # 9. 生成情感分析汇总
+          for course, data in stats['courses'].items():
+              stats['feedback_sentiment'][course] = data['sentiment_distribution']
+          
+          # 生成时间模式
+          for date_key, day_data in stats['daily_stats'].items():
+              day_of_week = datetime.strptime(date_key, '%Y-%m-%d').strftime('%A')
+              if day_of_week not in stats['time_patterns']:
+                  stats['time_patterns'][day_of_week] = {'count': 0, 'avg_difficulty': 0}
+              stats['time_patterns'][day_of_week]['count'] += day_data['count']
+              stats['time_patterns'][day_of_week]['avg_difficulty'] += day_data['avg_difficulty']
+          
+          for day in stats['time_patterns']:
+              total = sum(stats['time_patterns'][day]['count'] for d in stats['time_patterns'])
+              if total > 0:
+                  stats['time_patterns'][day]['avg_difficulty'] = round(
+                      stats['time_patterns'][day]['avg_difficulty'] / 7, 2  # 简化计算
+                  )
+          
+          # 10. 关联性分析（难度与理解程度的相关性）
+          all_difficulties = []
+          all_understandings = []
+          
+          for issue in stats['issues_detail']:
+              all_difficulties.append(issue['difficulty'])
+              all_understandings.append(issue['understanding'])
+          
+          if len(all_difficulties) > 1:
+              # 计算皮尔逊相关系数
+              n = len(all_difficulties)
+              sum_diff = sum(all_difficulties)
+              sum_under = sum(all_understandings)
+              sum_diff_sq = sum(d**2 for d in all_difficulties)
+              sum_under_sq = sum(u**2 for u in all_understandings)
+              sum_prod = sum(d * u for d, u in zip(all_difficulties, all_understandings))
+              
+              numerator = n * sum_prod - sum_diff * sum_under
+              denominator = math.sqrt((n * sum_diff_sq - sum_diff**2) * 
+                                     (n * sum_under_sq - sum_under**2))
+              
+              if denominator != 0:
+                  stats['correlation_analysis']['difficulty_understanding'] = round(
+                      numerator / denominator, 3
+                  )
+          
+          # 保存统计数据
+          with open('data/stats_enhanced.json', 'w', encoding='utf-8') as f:
+              json.dump(stats, f, ensure_ascii=False, indent=2)
+          
+          print("✅ 增强分析完成！")
+          print(f"📊 总反馈数: {stats['total_issues']}")
+          print(f"📚 课程数: {len(stats['courses'])}")
+          print(f"👥 学生数: {len(stats['students'])}")
+          print(f"⚠️  高风险学生: {len(stats['at_risk_students'])}人")
+          
+          # 生成学习风险报告
+          if len(stats['at_risk_students']) > 0:
+              report = f"# 学习风险预警报告\n\n"
+              report += f"生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+              report += f"## 高风险学生列表 ({len(stats['at_risk_students'])}人)\n\n"
+              
+              for student in stats['at_risk_students']:
+                  report += f"### {student['name']}\n"
+                  report += f"- 风险因素数: {student['risk_factors']}\n"
+                  report += f"- 参与度评分: {student['engagement_score']}/100\n"
+                  report += f"- 平均进度: {student['avg_progress']}%\n"
+                  report += f"- 学习趋势: {student['learning_trend']}\n\n"
+              
+              with open('data/reports/risk_alert.md', 'w', encoding='utf-8') as f:
+                  f.write(report)
+              
+              print(f"📄 风险报告已生成: data/reports/risk_alert.md")
+          EOF
+      
+      - name: 提交增强分析文件
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add data/stats_enhanced.json data/reports/risk_alert.md
+          git diff --quiet && git diff --staged --quiet || git commit -m "📊 增强分析完成 [自动运行]"
+          git push

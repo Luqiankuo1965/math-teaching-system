@@ -1,0 +1,728 @@
+name: 考研数学复习内容自动生成系统
+
+on:
+  workflow_dispatch:
+    inputs:
+      exam_type:
+        description: '考试类型'
+        required: true
+        type: choice
+        options:
+          - 数学一
+          - 数学二
+          - 数学三
+        default: '数学一'
+      phase:
+        description: '复习阶段'
+        required: true
+        type: choice
+        options:
+          - 基础阶段
+          - 强化阶段
+          - 冲刺阶段
+        default: '基础阶段'
+      focus_area:
+        description: '重点领域'
+        required: true
+        type: choice
+        options:
+          - 高频考点
+          - 易错点
+          - 综合题
+          - 真题解析
+          - 模拟试卷
+        default: '高频考点'
+      difficulty:
+        description: '难度等级'
+        required: true
+        type: choice
+        options:
+          - 基础
+          - 中等
+          - 困难
+          - 真题难度
+        default: '基础'
+      include_progress_tracking:
+        description: '启用学习进度跟踪'
+        required: true
+        type: boolean
+        default: true
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  generate_kaoyan_content:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: 设置Python环境
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: 创建目录结构
+        run: |
+          mkdir -p data/kaoyan
+          mkdir -p data/kaoyan/${{ github.event.inputs.exam_type }}
+          mkdir -p data/kaoyan/${{ github.event.inputs.exam_type }}/${{ github.event.inputs.phase }}
+      
+      - name: 生成考研复习内容
+        run: python3 << 'PYTHON_SCRIPT'
+import os
+import json
+from datetime import datetime
+
+# 考研数学重点章节配置
+kaoyan_config = {
+    "数学一": {
+        "高频考点": ["第一章", "第二章", "第三章", "第四章", "第五章", "第六章", "第十章", "第十一章"],
+        "易错点": ["第三章", "第四章", "第五章", "第六章", "第十章"],
+        "综合题": ["第三章+第四章", "第五章+第六章", "第七章+第八章", "第十章"]
+    },
+    "数学二": {
+        "高频考点": ["第一章", "第二章", "第三章", "第四章", "第五章", "第六章"],
+        "易错点": ["第三章", "第四章", "第五章", "第六章"],
+        "综合题": ["第三章+第四章", "第五章+第六章", "第二章+第四章"]
+    },
+    "数学三": {
+        "高频考点": ["第一章", "第二章", "第三章", "第四章", "第五章", "第六章", "第十章", "第十一章"],
+        "易错点": ["第三章", "第四章", "第五章", "第六章", "第十一章"],
+        "综合题": ["第三章+第四章", "第五章+第六章", "第十章", "第十一章"]
+    }
+}
+
+# 历年真题库（精选）
+true_questions = {
+    "第一章": [
+        {
+            "year": "2025",
+            "type": "数学一",
+            "score": 10,
+            "question": "设 $\\lim_{x\\to 0}\\frac{f(x)-1}{x} = 3$，求 $\\lim_{x\\to 0}\\frac{f(x)-f(-x)}{2x}$",
+            "solution": "6",
+            "analysis": "利用极限的线性性质，$\\lim_{x\\to 0}\\frac{f(x)-f(-x)}{2x} = \\frac{1}{2}[\\lim_{x\\to 0}\\frac{f(x)-1}{x} + \\lim_{x\\to 0}\\frac{1-f(-x)}{x}] = \\frac{1}{2}[3+3]=6$",
+            "difficulty": "中等"
+        },
+        {
+            "year": "2024",
+            "type": "数学一",
+            "score": 8,
+            "question": "计算 $\\lim_{x\\to 0}\\frac{e^x - 1 - x - \\frac{x^2}{2}}{x^3}$",
+            "solution": "1/6",
+            "analysis": "使用泰勒展开或洛必达法则，$e^x = 1 + x + \\frac{x^2}{2} + \\frac{x^3}{6} + o(x^3)$，分子约为 $\\frac{x^3}{6}$",
+            "difficulty": "困难"
+        }
+    ],
+    "第三章": [
+        {
+            "year": "2025",
+            "type": "数学一",
+            "score": 12,
+            "question": "设 $f(x)$ 在 $[0,1]$ 上连续，在 $(0,1)$ 内可导，且 $f(0)=0$，$f(1)=1$，证明存在 $\\xi\\in(0,1)$ 使得 $f'(\\xi)=2\\xi$",
+            "solution": "构造辅助函数 $F(x)=f(x)-x^2$，应用罗尔定理",
+            "analysis": "构造辅助函数是中值定理证明的关键，$F(0)=0$，$F(1)=0$，由罗尔定理存在 $\\xi\\in(0,1)$ 使得 $F'(\\xi)=f'(\\xi)-2\\xi=0$",
+            "difficulty": "困难"
+        },
+        {
+            "year": "2024",
+            "type": "数学二",
+            "score": 10,
+            "question": "证明：当 $x>0$ 时，$e^x > 1 + x + \\frac{x^2}{2}$",
+            "solution": "构造 $f(x)=e^x-1-x-\\frac{x^2}{2}$，求导证明单调递增",
+            "analysis": "利用导数证明不等式是考研高频考点，$f'(x)=e^x-1-x > 0$（因为 $e^x > 1+x$）",
+            "difficulty": "中等"
+        }
+    ],
+    "第四章": [
+        {
+            "year": "2025",
+            "type": "数学一",
+            "score": 11,
+            "question": "计算 $\\int \\frac{x\\arctan x}{(1+x^2)^2}dx$",
+            "solution": "$\\frac{\\arctan x}{2(1+x^2)} + \\frac{x}{4(1+x^2)} + \\frac{1}{4}\\arctan x + C$",
+            "analysis": "使用分部积分法，$u=\\arctan x$，$dv=\\frac{x}{(1+x^2)^2}dx$",
+            "difficulty": "困难"
+        }
+    ],
+    "第五章": [
+        {
+            "year": "2025",
+            "type": "数学一",
+            "score": 10,
+            "question": "计算 $\\int_0^1 x|\\ln x|dx$",
+            "solution": "$1/4$",
+            "analysis": "将积分区间分为 $(0,1)$，注意到 $x\\in(0,1)$ 时 $|\\ln x| = -\\ln x$，使用分部积分法",
+            "difficulty": "中等"
+        },
+        {
+            "year": "2024",
+            "type": "数学二",
+            "score": 12,
+            "question": "求由曲线 $y=x^2$ 和 $y=\\sqrt{x}$ 所围成的图形绕 $x$ 轴旋转一周所得旋转体的体积",
+            "solution": "$\\frac{3\\pi}{10}$",
+            "analysis": "旋转体体积公式 $V=\\pi\\int_0^1[(\\sqrt{x})^2-(x^2)^2]dx = \\pi\\int_0^1(x-x^4)dx$",
+            "difficulty": "中等"
+        }
+    ],
+    "第六章": [
+        {
+            "year": "2025",
+            "type": "数学一",
+            "score": 10,
+            "question": "求解微分方程 $y'' - 4y' + 4y = e^{2x}$",
+            "solution": "$y = (C_1 + C_2x)e^{2x} + \\frac{x^2}{2}e^{2x}$",
+            "analysis": "齐次方程通解为 $(C_1 + C_2x)e^{2x}$，设特解为 $y^*=Ax^2e^{2x}$",
+            "difficulty": "中等"
+        }
+    ]
+}
+
+# 根据输入参数确定生成内容
+exam_type = "${{ github.event.inputs.exam_type }}"
+phase = "${{ github.event.inputs.phase }}"
+focus_area = "${{ github.event.inputs.focus_area }}"
+difficulty = "${{ github.event.inputs.difficulty }}"
+include_progress = "${{ github.event.inputs.include_progress_tracking }}" == "true"
+
+# 获取重点章节
+if exam_type in kaoyan_config:
+    if focus_area in ["高频考点", "易错点", "综合题"]:
+        chapters = kaoyan_config[exam_type][focus_area]
+    else:
+        chapters = kaoyan_config[exam_type]["高频考点"]
+else:
+    chapters = []
+
+# 复习阶段配置
+phase_config = {
+    "基础阶段": {
+        "title": "基础阶段复习",
+        "objectives": [
+            "全面覆盖高等数学核心知识点",
+            "打牢基础，掌握基本概念和方法",
+            "熟练计算常见题型",
+            "建立完整的知识框架"
+        ],
+        "suggestions": [
+            "注重理解基本概念，不要死记硬背",
+            "多做基础题，提高计算准确率",
+            "建立错题本，及时总结",
+            "每天保证2-3小时学习时间"
+        ],
+        "time_allocation": "每天2-3小时，每周15-20小时"
+    },
+    "强化阶段": {
+        "title": "强化阶段突破",
+        "objectives": [
+            "突破高频考点和难点",
+            "掌握综合题解题技巧",
+            "训练快速准确解题能力",
+            "提高做题速度和正确率"
+        ],
+        "suggestions": [
+            "重点攻克高频考点和易错点",
+            "多做综合题，提高综合能力",
+            "模拟真实考试环境，限时训练",
+            "每天保证3-4小时学习时间"
+        ],
+        "time_allocation": "每天3-4小时，每周20-25小时"
+    },
+    "冲刺阶段": {
+        "title": "冲刺阶段模拟",
+        "objectives": [
+            "全真模拟考试训练",
+            "查漏补缺，巩固薄弱环节",
+            "掌握时间分配策略",
+            "调整考试心态"
+        ],
+        "suggestions": [
+            "进行全真模拟考试，严格限时",
+            "重点复习错题和薄弱环节",
+            "调整作息，保证考试状态",
+            "每天保证4-5小时学习时间"
+        ],
+        "time_allocation": "每天4-5小时，每周30-35小时"
+    }
+}
+
+# 生成白板HTML
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+filename = f"kaoyan_{exam_type}_{phase}_{focus_area}_{timestamp}.html"
+
+html_content = f"""<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>考研数学{exam_type}复习内容 - {phase}</title>
+    <style>
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: #f5f7fa;
+            padding: 20px;
+            line-height: 1.8;
+        }}
+        .container {{
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }}
+        .header {{
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 40px;
+        }}
+        .header h1 {{
+            font-size: 28px;
+            margin-bottom: 10px;
+        }}
+        .header .meta {{
+            font-size: 14px;
+            opacity: 0.9;
+        }}
+        .content {{
+            padding: 40px;
+        }}
+        .section {{
+            margin-bottom: 40px;
+            padding-bottom: 30px;
+            border-bottom: 2px solid #f0f0f0;
+        }}
+        .section:last-child {{
+            border-bottom: none;
+        }}
+        .section h2 {{
+            font-size: 20px;
+            color: #333;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }}
+        .chapter-card {{
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }}
+        .chapter-card h3 {{
+            font-size: 18px;
+            color: #667eea;
+            margin-bottom: 15px;
+        }}
+        .question {{
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #e0e0e0;
+        }}
+        .question h4 {{
+            font-size: 15px;
+            color: #333;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }}
+        .true-question {{
+            background: #fff8e1;
+            border-left: 4px solid #ffa000;
+        }}
+        .difficulty-tag {{
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            margin-left: 10px;
+        }}
+        .difficulty-tag.基础 {{
+            background: #c8e6c9;
+            color: #2e7d32;
+        }}
+        .difficulty-tag.中等 {{
+            background: #fff9c4;
+            color: #f57f17;
+        }}
+        .difficulty-tag.困难 {{
+            background: #ffcdd2;
+            color: #c62828;
+        }}
+        .progress-section {{
+            background: #f0f7ff;
+            padding: 30px;
+            border-radius: 10px;
+            margin-top: 30px;
+        }}
+        .progress-section h3 {{
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 20px;
+        }}
+        .progress-bar-container {{
+            margin-bottom: 20px;
+        }}
+        .progress-header {{
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }}
+        .progress-bar {{
+            height: 10px;
+            background: #e0e0e0;
+            border-radius: 5px;
+            overflow: hidden;
+        }}
+        .progress-fill {{
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 5px;
+            transition: width 0.5s;
+        }}
+        .chapter-progress-list {{
+            margin-top: 20px;
+        }}
+        .chapter-progress-item {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }}
+        .checkbox {{
+            margin-right: 10px;
+            width: 20px;
+            height: 20px;
+        }}
+        .progress-input {{
+            width: 60px;
+            padding: 5px;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+            text-align: center;
+        }}
+        @media print {{
+            body {{ background: white; padding: 0; }}
+            .progress-section {{ display: none; }}
+        }}
+    </style>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 考研数学{exam_type}复习内容</h1>
+            <div class="meta">
+                复习阶段：{phase} | 重点领域：{focus_area} | 难度：{difficulty} | 生成时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+            </div>
+        </div>
+        
+        <div class="content">
+            <!-- 复习目标 -->
+            <div class="section">
+                <h2>🎯 {phase_config[phase]['title']}</h2>
+                <div style="color: #666; font-size: 15px;">
+                    <p><strong>复习目标：</strong></p>
+                    <ul style="margin-left: 20px;">
+"""
+
+# 添加复习目标
+for obj in phase_config[phase]['objectives']:
+    html_content += f"                        <li>{obj}</li>\n"
+
+html_content += f"""                    </ul>
+                    <p style="margin-top: 20px;"><strong>建议时间分配：</strong>{phase_config[phase]['time_allocation']}</p>
+                </div>
+            </div>
+            
+            <!-- 复习建议 -->
+            <div class="section">
+                <h2>💡 复习建议</h2>
+                <div style="color: #666; font-size: 15px; line-height: 2;">
+"""
+
+# 添加复习建议
+for suggestion in phase_config[phase]['suggestions']:
+    html_content += f"                    <p>• {suggestion}</p>\n"
+
+html_content += """                </div>
+            </div>
+            
+            <!-- 重点章节 -->
+            <div class="section">
+                <h2>📖 重点章节</h2>
+"""
+
+# 添加重点章节
+for i, chapter in enumerate(chapters, 1):
+    html_content += f"""
+                <div class="chapter-card">
+                    <h3>{i}. {chapter}</h3>
+"""
+
+    # 添加真题（如果有）
+    if chapter in true_questions:
+        html_content += f"""
+                    <h4 style="font-size: 14px; color: #333; margin-bottom: 10px;">🔥 历年真题</h4>
+"""
+        for j, q in enumerate(true_questions[chapter], 1):
+            html_content += f"""
+                    <div class="question true-question">
+                        <h4>
+                            【真题{j}】{q['year']}年 {q['type']} - {q['score']}分
+                            <span class="difficulty-tag {q['difficulty']}">{q['difficulty']}</span>
+                        </h4>
+                        <p style="margin-bottom: 10px;"><strong>题目：</strong>{q['question']}</p>
+                        <p style="margin-bottom: 10px; color: #666;"><strong>解答要点：</strong>{q['solution']}</p>
+                        <details>
+                            <summary style="cursor: pointer; color: #667eea;">查看详细解析</summary>
+                            <div style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 5px;">
+                                <p><strong>详细解析：</strong>{q['analysis']}</p>
+                            </div>
+                        </details>
+                    </div>
+"""
+    
+    html_content += """
+                </div>
+"""
+
+# 添加学习进度跟踪
+if include_progress:
+    html_content += f"""
+            </div>
+            
+            <!-- 学习进度跟踪 -->
+            <div class="progress-section">
+                <h3>📊 学习进度跟踪</h3>
+                
+                <div class="progress-bar-container">
+                    <div class="progress-header">
+                        <span>总体进度</span>
+                        <span id="totalProgress">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div id="progressBar" class="progress-fill" style="width: 0%;"></div>
+                    </div>
+                </div>
+                
+                <div class="chapter-progress-list">
+"""
+
+    # 添加章节进度列表
+    for chapter in chapters:
+        html_content += f"""
+                    <div class="chapter-progress-item">
+                        <label>
+                            <input type="checkbox" class="checkbox" onchange="updateProgress()">
+                            {chapter}
+                        </label>
+                        <div>
+                            <span>得分：</span>
+                            <input type="number" class="progress-input" min="0" max="100" placeholder="0" onchange="updateProgress()">
+                        </div>
+                    </div>
+"""
+
+    html_content += f"""
+                </div>
+                
+                <div style="margin-top: 20px; text-align: center;">
+                    <button onclick="resetProgress()" style="padding: 10px 30px; border: none; border-radius: 8px; background: #667eea; color: white; font-size: 14px; cursor: pointer; margin-right: 10px;">重置进度</button>
+                    <button onclick="exportProgress()" style="padding: 10px 30px; border: none; border-radius: 8px; background: #e0e0e0; color: #666; font-size: 14px; cursor: pointer;">导出进度</button>
+                </div>
+            </div>
+            
+            <script>
+                // 加载保存的进度
+                function loadProgress() {{
+                    const savedData = localStorage.getItem('kaoyan_progress_{exam_type}_{phase}_{timestamp}');
+                    if (savedData) {{
+                        const data = JSON.parse(savedData);
+                        document.querySelectorAll('.checkbox').forEach((cb, index) => {{
+                            if (data.completed[index]) {{
+                                cb.checked = true;
+                            }}
+                        }});
+                        document.querySelectorAll('.progress-input').forEach((input, index) => {{
+                            if (data.scores[index]) {{
+                                input.value = data.scores[index];
+                            }}
+                        }});
+                        updateProgress();
+                    }}
+                }}
+                
+                // 更新进度
+                function updateProgress() {{
+                    const checkboxes = document.querySelectorAll('.checkbox');
+                    const inputs = document.querySelectorAll('.progress-input');
+                    
+                    const completed = [];
+                    const scores = [];
+                    
+                    checkboxes.forEach(cb => {{
+                        completed.push(cb.checked);
+                    }});
+                    
+                    inputs.forEach(input => {{
+                        scores.push(parseInt(input.value) || 0);
+                    }});
+                    
+                    const totalChapters = checkboxes.length;
+                    const completedCount = completed.filter(c => c).length;
+                    const avgScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+                    
+                    const progress = Math.round((completedCount / totalChapters) * 100);
+                    
+                    document.getElementById('totalProgress').textContent = progress + '%';
+                    document.getElementById('progressBar').style.width = progress + '%';
+                    
+                    // 保存进度
+                    const progressData = {{
+                        completed: completed,
+                        scores: scores,
+                        progress: progress,
+                        avgScore: Math.round(avgScore),
+                        timestamp: new Date().toISOString()
+                    }};
+                    
+                    localStorage.setItem('kaoyan_progress_{exam_type}_{phase}_{timestamp}', JSON.stringify(progressData));
+                }}
+                
+                // 重置进度
+                function resetProgress() {{
+                    if (confirm('确定要重置所有学习进度吗？')) {{
+                        document.querySelectorAll('.checkbox').forEach(cb => cb.checked = false);
+                        document.querySelectorAll('.progress-input').forEach(input => input.value = '');
+                        localStorage.removeItem('kaoyan_progress_{exam_type}_{phase}_{timestamp}');
+                        updateProgress();
+                    }}
+                }}
+                
+                // 导出进度
+                function exportProgress() {{
+                    const savedData = localStorage.getItem('kaoyan_progress_{exam_type}_{phase}_{timestamp}');
+                    if (savedData) {{
+                        const data = JSON.parse(savedData);
+                        const content = `考研数学{exam_type}学习进度报告\\n`;
+                        const content2 = `复习阶段：{phase}\\n`;
+                        const content3 = `导出时间：${{new Date().toLocaleString()}}\\n\\n`;
+                        const content4 = `总体进度：${{data.progress}}%\\n`;
+                        const content5 = `平均得分：${{data.avgScore}}分\\n\\n`;
+                        const content6 = `章节完成情况：\\n`;
+                        
+                        const chapters = {json.dumps([ch for ch in chapters], ensure_ascii=False)};
+                        let chapterList = '';
+                        chapters.forEach((ch, index) => {{
+                            chapterList += `${{index + 1}}. ${{ch}}: ${{data.completed[index] ? '✓' : '✗'}} (${{data.scores[index] || 0}}分)\\n`;
+                        }});
+                        
+                        const fullContent = content + content2 + content3 + content4 + content5 + content6 + chapterList;
+                        
+                        const blob = new Blob([fullContent], {{type: 'text/plain'}});
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = '考研数学{exam_type}_学习进度_{timestamp}.txt';
+                        a.click();
+                        URL.revokeObjectURL(url);
+                    }}
+                }}
+                
+                // 页面加载时恢复进度
+                window.onload = function() {{
+                    loadProgress();
+                }};
+            </script>
+"""
+
+html_content += """
+        </div>
+    </div>
+</body>
+</html>
+"""
+
+# 保存文件
+save_path = f"data/kaoyan/{exam_type}/{phase}/{filename}"
+os.makedirs(os.path.dirname(save_path), exist_ok=True)
+with open(save_path, 'w', encoding='utf-8') as f:
+    f.write(html_content)
+
+print(f"考研复习内容已生成：{save_path}")
+
+# 生成元数据
+metadata = {
+    "exam_type": exam_type,
+    "phase": phase,
+    "focus_area": focus_area,
+    "difficulty": difficulty,
+    "chapters": chapters,
+    "filename": filename,
+    "timestamp": datetime.now().isoformat(),
+    "path": save_path,
+    "features": {
+        "progress_tracking": include_progress
+    }
+}
+
+metadata_path = f"data/kaoyan/{exam_type}/{phase}/metadata_{timestamp}.json"
+with open(metadata_path, 'w', encoding='utf-8') as f:
+    json.dump(metadata, f, ensure_ascii=False, indent=2)
+
+print(f"元数据已生成：{metadata_path}")
+PYTHON_SCRIPT
+      
+      - name: 提交考研复习内容
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add data/kaoyan/
+          git commit -m "生成考研数学复习内容：${{ github.event.inputs.exam_type }} - ${{ github.event.inputs.phase }}"
+          git push
+      
+      - name: 生成工作流总结
+        run: |
+          echo "🎓 考研数学复习内容生成完成！" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**生成参数：**" >> $GITHUB_STEP_SUMMARY
+          echo "- 考试类型：${{ github.event.inputs.exam_type }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 复习阶段：${{ github.event.inputs.phase }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 重点领域：${{ github.event.inputs.focus_area }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 难度等级：${{ github.event.inputs.difficulty }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 学习进度跟踪：${{ github.event.inputs.include_progress_tracking }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**重点章节：**" >> $GITHUB_STEP_SUMMARY
+          python3 << 'PYTHON_SCRIPT'
+kaoyan_config = {
+    "数学一": {"高频考点": ["第一章", "第二章", "第三章", "第四章", "第五章", "第六章", "第十章", "第十一章"]},
+    "数学二": {"高频考点": ["第一章", "第二章", "第三章", "第四章", "第五章", "第六章"]},
+    "数学三": {"高频考点": ["第一章", "第二章", "第三章", "第四章", "第五章", "第六章", "第十章", "第十一章"]}
+}
+exam_type = "${{ github.event.inputs.exam_type }}"
+focus_area = "${{ github.event.inputs.focus_area }}"
+if focus_area in ["高频考点", "易错点", "综合题"]:
+    chapters = kaoyan_config[exam_type][focus_area]
+else:
+    chapters = kaoyan_config[exam_type]["高频考点"]
+for i, ch in enumerate(chapters, 1):
+    print(f"{i}. {ch}") >> $GITHUB_STEP_SUMMARY
+PYTHON_SCRIPT
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📊 复习内容已保存到 \`data/kaoyan/\` 目录" >> $GITHUB_STEP_SUMMARY
+          echo "💾 学习进度会自动保存到浏览器本地存储" >> $GITHUB_STEP_SUMMARY
+          echo "📥 可导出学习进度报告" >> $GITHUB_STEP_SUMMARY

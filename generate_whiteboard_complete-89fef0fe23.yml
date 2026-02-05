@@ -1,0 +1,1410 @@
+name: 智能课堂白板生成系统 - 完整版（12章）
+
+on:
+  workflow_dispatch:
+    inputs:
+      volume:
+        description: '选择教材'
+        required: true
+        type: choice
+        options:
+          - 上册
+          - 下册
+        default: '上册'
+      chapter:
+        description: '选择章节（1-12）'
+        required: true
+        type: choice
+        options:
+          - '第一章'
+          - '第二章'
+          - '第三章'
+          - '第四章'
+          - '第五章'
+          - '第六章'
+          - '第七章'
+          - '第八章'
+          - '第九章'
+          - '第十章'
+          - '第十一章'
+          - '第十二章'
+        default: '第一章'
+      difficulty:
+        description: '难度等级'
+        required: true
+        type: choice
+        options:
+          - 简单
+          - 中等
+          - 困难
+        default: '中等'
+      include_exercises:
+        description: '包含课堂练习'
+        required: true
+        type: boolean
+        default: true
+      include_homework:
+        description: '布置课后作业'
+        required: true
+        type: boolean
+        default: true
+      enable_notes:
+        description: '启用学生笔记功能'
+        required: true
+        type: boolean
+        default: true
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  generate_whiteboard:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: 设置Python环境
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: 创建目录结构
+        run: |
+          mkdir -p data/whiteboards
+          mkdir -p data/whiteboards/volume1
+          mkdir -p data/whiteboards/volume2
+      
+      - name: 生成白板内容
+        run: python3 << 'PYTHON_SCRIPT'
+import os
+import json
+from datetime import datetime
+
+# 章节模板库
+chapter_templates = {
+    # ========== 上册 ==========
+    "第一章": {
+        "title": "第一章：函数与极限",
+        "volume": "上册",
+        "objectives": [
+            "理解函数的概念与性质",
+            "掌握极限的定义和运算规则",
+            "理解连续函数的概念",
+            "掌握闭区间上连续函数的性质"
+        ],
+        "concepts": [
+            {
+                "name": "1.1 函数的概念",
+                "content": "函数是从一个集合到另一个集合的对应关系。设D为非空数集，如果对于D中的每一个数x，按照某个确定的法则f，都有唯一确定的数y与之对应，则称y是x的函数，记作y=f(x)。"
+            },
+            {
+                "name": "1.2 极限的定义",
+                "content": "设函数f(x)在点x₀的某个去心邻域内有定义，如果存在常数A，使得对于任意给定的ε>0，都存在δ>0，当0<|x-x₀|<δ时，有|f(x)-A|<ε，则称A为f(x)当x→x₀时的极限。"
+            },
+            {
+                "name": "1.3 连续函数",
+                "content": "设函数f(x)在点x₀的某个邻域内有定义，如果lim(x→x₀)f(x)=f(x₀)，则称f(x)在点x₀处连续。连续函数的图像是一条不间断的曲线。"
+            }
+        ],
+        "formulas": [
+            {
+                "name": "极限的四则运算法则",
+                "latex": "\\lim_{x\\to x_0}[f(x)\\pm g(x)] = \\lim_{x\\to x_0}f(x) \\pm \\lim_{x\\to x_0}g(x)"
+            },
+            {
+                "name": "重要极限1",
+                "latex": "\\lim_{x\\to 0}\\frac{\\sin x}{x} = 1"
+            },
+            {
+                "name": "重要极限2",
+                "latex": "\\lim_{x\\to \\infty}\\left(1+\\frac{1}{x}\\right)^x = e"
+            }
+        ],
+        "examples": [
+            {
+                "title": "例题1：计算极限",
+                "question": "计算 $\\lim_{x\\to 0}\\frac{\\sin 3x}{x}$",
+                "solution": """
+                <p><strong>解：</strong></p>
+                <p>利用重要极限 $\\lim_{x\\to 0}\\frac{\\sin x}{x} = 1$，我们有：</p>
+                <p>$$\\lim_{x\\to 0}\\frac{\\sin 3x}{x} = \\lim_{x\\to 0}\\frac{\\sin 3x}{3x} \\cdot 3 = 3 \\cdot 1 = 3$$</p>
+                <p><strong>答案：</strong>3</p>
+                """
+            },
+            {
+                "title": "例题2：判断连续性",
+                "question": "讨论函数 $f(x) = \\frac{x^2-1}{x-1}$ 在 $x=1$ 处的连续性",
+                "solution": """
+                <p><strong>解：</strong></p>
+                <p>首先，函数在 $x=1$ 处无定义，因此 $x=1$ 是函数的间断点。</p>
+                <p>化简函数：$f(x) = \\frac{x^2-1}{x-1} = x+1$（当 $x\\neq 1$ 时）</p>
+                <p>计算极限：$\\lim_{x\\to 1}f(x) = \\lim_{x\\to 1}(x+1) = 2$</p>
+                <p>由于极限存在但函数在 $x=1$ 处无定义，所以 $x=1$ 是可去间断点。</p>
+                <p><strong>结论：</strong>函数在 $x=1$ 处不连续</p>
+                """
+            }
+        ],
+        "exercises": [
+            {
+                "question": "计算 $\\lim_{x\\to 2}\\frac{x^2-4}{x-2}$",
+                "answer": "4",
+                "hint": "先化简分子"
+            },
+            {
+                "question": "计算 $\\lim_{x\\to 0}\\frac{1-\\cos x}{x^2}$",
+                "answer": "1/2",
+                "hint": "利用等价无穷小替换"
+            }
+        ],
+        "homework": [
+            "教材P25：习题1.1 (1)-(4)",
+            "教材P32：习题1.2 (1), (3), (5)",
+            "教材P38：习题1.3 (2), (4), (6)",
+            "思考题：证明闭区间上连续函数的介值定理"
+        ],
+        "homework_score": 100
+    },
+    
+    "第二章": {
+        "title": "第二章：导数与微分",
+        "volume": "上册",
+        "objectives": [
+            "理解导数的概念及几何意义",
+            "掌握导数的四则运算法则",
+            "掌握复合函数的求导法则",
+            "理解微分的概念及应用"
+        ],
+        "concepts": [
+            {
+                "name": "2.1 导数的定义",
+                "content": "设函数y=f(x)在点x₀的某个邻域内有定义，如果极限lim(x→x₀)[f(x)-f(x₀)]/(x-x₀)存在，则称这个极限值为函数f(x)在点x₀处的导数，记作f'(x₀)。"
+            },
+            {
+                "name": "2.2 导数的几何意义",
+                "content": "函数y=f(x)在点x₀处的导数f'(x₀)表示曲线y=f(x)在点(x₀, f(x₀))处的切线斜率。切线方程为：y-f(x₀)=f'(x₀)(x-x₀)"
+            },
+            {
+                "name": "2.3 复合函数求导法则",
+                "content": "设y=f(u)，u=g(x)，且f(u)在u点可导，g(x)在x点可导，则复合函数y=f(g(x))在x点可导，且dy/dx=dy/du·du/dx，这就是链式法则。"
+            }
+        ],
+        "formulas": [
+            {
+                "name": "导数定义",
+                "latex": "f'(x_0) = \\lim_{x\\to x_0}\\frac{f(x)-f(x_0)}{x-x_0}"
+            },
+            {
+                "name": "链式法则",
+                "latex": "\\frac{dy}{dx} = \\frac{dy}{du} \\cdot \\frac{du}{dx}"
+            },
+            {
+                "name": "乘积法则",
+                "latex": "(uv)' = u'v + uv'"
+            },
+            {
+                "name": "商法则",
+                "latex": "\\left(\\frac{u}{v}\\right)' = \\frac{u'v - uv'}{v^2}"
+            }
+        ],
+        "examples": [
+            {
+                "title": "例题1：求导数",
+                "question": "求函数 $f(x) = \\sin x^2$ 的导数",
+                "solution": """
+                <p><strong>解：</strong></p>
+                <p>使用链式法则：</p>
+                <p>设 $u = x^2$，则 $f(x) = \\sin u$</p>
+                <p>$$f'(x) = \\cos u \\cdot u' = \\cos x^2 \\cdot 2x = 2x\\cos x^2$$</p>
+                <p><strong>答案：</strong>$f'(x) = 2x\\cos x^2$</p>
+                """
+            },
+            {
+                "title": "例题2：应用题",
+                "question": "一个球体半径以 0.5cm/s 的速度增大，当半径为 10cm 时，表面积增加的速度是多少？",
+                "solution": """
+                <p><strong>解：</strong></p>
+                <p>球体表面积公式：$S = 4\\pi r^2$</p>
+                <p>对时间t求导：$\\frac{dS}{dt} = 8\\pi r \\cdot \\frac{dr}{dt}$</p>
+                <p>当 $r=10$ cm，$\\frac{dr}{dt}=0.5$ cm/s 时：</p>
+                <p>$$\\frac{dS}{dt} = 8\\pi \\cdot 10 \\cdot 0.5 = 40\\pi \\text{ cm}^2/\\text{s}$$</p>
+                <p><strong>答案：</strong>表面积增加的速度为 $40\\pi$ cm²/s</p>
+                """
+            }
+        ],
+        "exercises": [
+            {
+                "question": "求 $y = \\ln(\\cos x)$ 的导数",
+                "answer": "-tan x",
+                "hint": "使用链式法则"
+            },
+            {
+                "question": "求 $y = e^{x^2}$ 在 $x=0$ 处的切线方程",
+                "answer": "y=1",
+                "hint": "先求导数，再求切线方程"
+            }
+        ],
+        "homework": [
+            "教材P52：习题2.1 (1)-(5)",
+            "教材P58：习题2.2 (2), (4), (6), (8)",
+            "教材P65：习题2.3 (1), (3), (5)",
+            "应用题：分析一个实际变化率问题"
+        ],
+        "homework_score": 100
+    },
+    
+    "第三章": {
+        "title": "第三章：微分中值定理与导数的应用",
+        "volume": "上册",
+        "objectives": [
+            "掌握罗尔定理、拉格朗日中值定理",
+            "理解洛必达法则及其应用",
+            "掌握函数的单调性判别法",
+            "理解泰勒公式"
+        ],
+        "concepts": [
+            {
+                "name": "3.1 罗尔定理",
+                "content": "如果函数f(x)在闭区间[a,b]上连续，在开区间(a,b)内可导，且f(a)=f(b)，则在开区间(a,b)内至少存在一点ξ，使得f'(ξ)=0。"
+            },
+            {
+                "name": "3.2 拉格朗日中值定理",
+                "content": "如果函数f(x)在闭区间[a,b]上连续，在开区间(a,b)内可导，则在开区间(a,b)内至少存在一点ξ，使得f'(ξ)=[f(b)-f(a)]/(b-a)。"
+            },
+            {
+                "name": "3.3 洛必达法则",
+                "content": "如果lim(x→x₀)f(x)=lim(x→x₀)g(x)=0（或∞），且f'(x)/g'(x)在x₀的某去心邻域内有定义，则lim(x→x₀)f(x)/g(x)=lim(x→x₀)f'(x)/g'(x)（当右端极限存在时）。"
+            }
+        ],
+        "formulas": [
+            {
+                "name": "拉格朗日中值公式",
+                "latex": "f(b) - f(a) = f'(\\xi)(b - a)"
+            },
+            {
+                "name": "柯西中值公式",
+                "latex": "\\frac{f(b)-f(a)}{g(b)-g(a)} = \\frac{f'(\\xi)}{g'(\\xi)}"
+            },
+            {
+                "name": "泰勒公式（麦克劳林形式）",
+                "latex": "f(x) = f(0) + f'(0)x + \\frac{f''(0)}{2!}x^2 + \\cdots + \\frac{f^{(n)}(0)}{n!}x^n + o(x^n)"
+            }
+        ],
+        "examples": [
+            {
+                "title": "例题1：洛必达法则",
+                "question": "计算 $\\lim_{x\\to 0}\\frac{e^x - 1 - x}{x^2}$",
+                "solution": """
+                <p><strong>解：</strong></p>
+                <p>这是一个 $\\frac{0}{0}$ 型极限，使用洛必达法则：</p>
+                <p>$$\\lim_{x\\to 0}\\frac{e^x - 1 - x}{x^2} = \\lim_{x\\to 0}\\frac{e^x - 1}{2x} = \\lim_{x\\to 0}\\frac{e^x}{2} = \\frac{1}{2}$$</p>
+                <p><strong>答案：</strong>$\\frac{1}{2}$</p>
+                """
+            }
+        ],
+        "exercises": [
+            {
+                "question": "证明函数 $f(x)=x^3-3x$ 在区间 $[0,2]$ 上满足拉格朗日中值定理",
+                "answer": "存在 $\\xi=\\frac{2}{\\sqrt{3}}$",
+                "hint": "验证条件并求 $\\xi$"
+            }
+        ],
+        "homework": [
+            "教材P75：习题3.1 (1)-(3)",
+            "教材P82：习题3.2 (2), (4), (6)",
+            "教材P90：习题3.3 (1), (3)"
+        ],
+        "homework_score": 100
+    },
+    
+    "第四章": {
+        "title": "第四章：不定积分",
+        "volume": "上册",
+        "objectives": [
+            "理解不定积分的概念",
+            "掌握基本积分公式",
+            "掌握换元积分法",
+            "掌握分部积分法"
+        ],
+        "concepts": [
+            {
+                "name": "4.1 不定积分的定义",
+                "content": "如果在区间I上，F'(x)=f(x)，则称F(x)为f(x)在区间I上的一个原函数。f(x)的所有原函数称为f(x)的不定积分，记作∫f(x)dx。"
+            }
+        ],
+        "formulas": [
+            {
+                "name": "基本积分公式",
+                "latex": "\\int x^n dx = \\frac{x^{n+1}}{n+1} + C \\quad (n \\neq -1)"
+            },
+            {
+                "name": "指数函数积分",
+                "latex": "\\int e^x dx = e^x + C"
+            },
+            {
+                "name": "对数函数积分",
+                "latex": "\\int \\frac{1}{x} dx = \\ln|x| + C"
+            },
+            {
+                "name": "分部积分公式",
+                "latex": "\\int u dv = uv - \\int v du"
+            }
+        ],
+        "examples": [
+            {
+                "title": "例题1：分部积分",
+                "question": "计算 $\\int x\\ln x dx$",
+                "solution": """
+                <p><strong>解：</strong></p>
+                <p>设 $u = \\ln x$，$dv = x dx$</p>
+                <p>则 $du = \\frac{1}{x}dx$，$v = \\frac{x^2}{2}$</p>
+                <p>$$\\int x\\ln x dx = \\frac{x^2}{2}\\ln x - \\int \\frac{x^2}{2} \\cdot \\frac{1}{x}dx$$</p>
+                <p>$$= \\frac{x^2}{2}\\ln x - \\frac{1}{2}\\int x dx$$</p>
+                <p>$$= \\frac{x^2}{2}\\ln x - \\frac{x^2}{4} + C$$</p>
+                """
+            }
+        ],
+        "exercises": [
+            {
+                "question": "计算 $\\int \\sin^2 x dx$",
+                "answer": "$\\frac{x}{2} - \\frac{\\sin 2x}{4} + C$",
+                "hint": "使用二倍角公式"
+            }
+        ],
+        "homework": [
+            "教材P100：习题4.1 (1)-(6)",
+            "教材P108：习题4.2 (2), (4), (6)",
+            "教材P115：习题4.3 (1), (3), (5)"
+        ],
+        "homework_score": 100
+    },
+    
+    "第五章": {
+        "title": "第五章：定积分",
+        "volume": "上册",
+        "objectives": [
+            "理解定积分的概念及几何意义",
+            "掌握微积分基本公式",
+            "掌握定积分的计算方法",
+            "理解反常积分"
+        ],
+        "concepts": [
+            {
+                "name": "5.1 定积分的定义",
+                "content": "设函数f(x)在区间[a,b]上有界，用分点a=x₀<x₁<...<xₙ=b把区间[a,b]分成n个小区间，在每个小区间上任取一点ξᵢ，作乘积f(ξᵢ)Δxᵢ，求和，当最大的小区间长度趋于零时，如果和的极限存在，则称这个极限值为f(x)在[a,b]上的定积分。"
+            }
+        ],
+        "formulas": [
+            {
+                "name": "微积分基本公式",
+                "latex": "\\int_a^b f(x)dx = F(b) - F(a)"
+            },
+            {
+                "name": "牛顿-莱布尼茨公式",
+                "latex": "\\frac{d}{dx}\\int_a^x f(t)dt = f(x)"
+            }
+        ],
+        "examples": [
+            {
+                "title": "例题1：计算定积分",
+                "question": "计算 $\\int_0^1 x^2 dx$",
+                "solution": """
+                <p><strong>解：</strong></p>
+                <p>$$\\int_0^1 x^2 dx = \\left.\\frac{x^3}{3}\\right|_0^1 = \\frac{1}{3} - 0 = \\frac{1}{3}$$</p>
+                """
+            }
+        ],
+        "exercises": [
+            {
+                "question": "计算 $\\int_0^{\\pi} \\sin x dx$",
+                "answer": "2",
+                "hint": "使用微积分基本公式"
+            }
+        ],
+        "homework": [
+            "教材P130：习题5.1 (1)-(4)",
+            "教材P138：习题5.2 (2), (4), (6)"
+        ],
+        "homework_score": 100
+    },
+    
+    "第六章": {
+        "title": "第六章：微分方程",
+        "volume": "上册",
+        "objectives": [
+            "理解微分方程的基本概念",
+            "掌握可分离变量的微分方程",
+            "掌握一阶线性微分方程",
+            "理解二阶常系数线性微分方程"
+        ],
+        "concepts": [
+            {
+                "name": "6.1 微分方程的概念",
+                "content": "含有未知函数及其导数的方程称为微分方程。微分方程中出现的未知函数的导数的最高阶数称为微分方程的阶。"
+            }
+        ],
+        "formulas": [
+            {
+                "name": "一阶线性微分方程通解公式",
+                "latex": "y = e^{-\\int P(x)dx}\\left[\\int Q(x)e^{\\int P(x)dx}dx + C\\right]"
+            }
+        ],
+        "examples": [
+            {
+                "title": "例题1：可分离变量",
+                "question": "求解 $\\frac{dy}{dx} = xy$",
+                "solution": """
+                <p><strong>解：</strong></p>
+                <p>分离变量：$\\frac{dy}{y} = x dx$</p>
+                <p>两边积分：$\\ln|y| = \\frac{x^2}{2} + C_1$</p>
+                <p>$$y = Ce^{x^2/2} \\quad (C = \\pm e^{C_1})$$</p>
+                """
+            }
+        ],
+        "exercises": [
+            {
+                "question": "求解 $\\frac{dy}{dx} = \\frac{x}{y}$",
+                "answer": "$y^2 = x^2 + C$",
+                "hint": "分离变量后积分"
+            }
+        ],
+        "homework": [
+            "教材P155：习题6.1 (1)-(4)",
+            "教材P162：习题6.2 (2), (4), (6)"
+        ],
+        "homework_score": 100
+    },
+    
+    # ========== 下册 ==========
+    "第七章": {
+        "title": "第七章：向量代数与空间解析几何",
+        "volume": "下册",
+        "objectives": [
+            "理解向量的概念及运算",
+            "掌握向量的数量积与向量积",
+            "理解空间平面和直线的方程",
+            "了解空间曲面"
+        ],
+        "concepts": [
+            {
+                "name": "7.1 向量的数量积",
+                "content": "向量a与向量b的数量积定义为a·b=|a||b|cosθ，其中θ为两向量的夹角。"
+            },
+            {
+                "name": "7.2 向量的向量积",
+                "content": "向量a与向量b的向量积记作a×b，其大小为|a×b|=|a||b|sinθ，方向垂直于a和b所确定的平面。"
+            }
+        ],
+        "formulas": [
+            {
+                "name": "数量积坐标公式",
+                "latex": "\\vec{a} \\cdot \\vec{b} = x_1x_2 + y_1y_2 + z_1z_2"
+            },
+            {
+                "name": "向量积坐标公式",
+                "latex": "\\vec{a} \\times \\vec{b} = \\begin{vmatrix} \\mathbf{i} & \\mathbf{j} & \\mathbf{k} \\\\ x_1 & y_1 & z_1 \\\\ x_2 & y_2 & z_2 \\end{vmatrix}"
+            },
+            {
+                "name": "平面的一般方程",
+                "latex": "Ax + By + Cz + D = 0"
+            },
+            {
+                "name": "直线的点向式方程",
+                "latex": "\\frac{x-x_0}{m} = \\frac{y-y_0}{n} = \\frac{z-z_0}{p}"
+            }
+        ],
+        "examples": [
+            {
+                "title": "例题1：向量运算",
+                "question": "已知 $\\vec{a}=(1,2,3)$，$\\vec{b}=(4,5,6)$，求 $\\vec{a} \\cdot \\vec{b}$ 和 $\\vec{a} \\times \\vec{b}$",
+                "solution": """
+                <p><strong>解：</strong></p>
+                <p>数量积：$$\\vec{a} \\cdot \\vec{b} = 1\\times4 + 2\\times5 + 3\\times6 = 4 + 10 + 18 = 32$$</p>
+                <p>向量积：</p>
+                <p>$$\\vec{a} \\times \\vec{b} = \\begin{vmatrix} \\mathbf{i} & \\mathbf{j} & \\mathbf{k} \\\\ 1 & 2 & 3 \\\\ 4 & 5 & 6 \\end{vmatrix} = -3\\mathbf{i} + 6\\mathbf{j} - 3\\mathbf{k} = (-3, 6, -3)$$</p>
+                """
+            }
+        ],
+        "exercises": [
+            {
+                "question": "求点(1,2,3)到平面 $x+2y+2z-10=0$ 的距离",
+                "answer": "2",
+                "hint": "使用点到平面的距离公式"
+            }
+        ],
+        "homework": [
+            "教材P180：习题7.1 (1)-(4)",
+            "教材P188：习题7.2 (2), (4), (6)",
+            "教材P195：习题7.3 (1), (3), (5)"
+        ],
+        "homework_score": 100
+    },
+    
+    "第八章": {
+        "title": "第八章：多元函数微分法及其应用",
+        "volume": "下册",
+        "objectives": [
+            "理解多元函数的概念",
+            "掌握偏导数的计算",
+            "理解全微分的概念",
+            "掌握多元函数极值的求法"
+        ],
+        "concepts": [
+            {
+                "name": "8.1 偏导数",
+                "content": "设函数z=f(x,y)在点(x₀,y₀)的某个邻域内有定义，固定y=y₀，如果一元函数f(x,y₀)在x₀处可导，则称这个导数为z=f(x,y)在点(x₀,y₀)处对x的偏导数。"
+            }
+        ],
+        "formulas": [
+            {
+                "name": "全微分公式",
+                "latex": "dz = \\frac{\\partial z}{\\partial x}dx + \\frac{\\partial z}{\\partial y}dy"
+            },
+            {
+                "name": "链式法则（多元）",
+                "latex": "\\frac{dz}{dt} = \\frac{\\partial z}{\\partial x}\\frac{dx}{dt} + \\frac{\\partial z}{\\partial y}\\frac{dy}{dt}"
+            }
+        ],
+        "examples": [
+            {
+                "title": "例题1：求偏导数",
+                "question": "求 $z = x^2 + y^2$ 的偏导数 $\\frac{\\partial z}{\\partial x}$ 和 $\\frac{\\partial z}{\\partial y}$",
+                "solution": """
+                <p><strong>解：</strong></p>
+                <p>$$\\frac{\\partial z}{\\partial x} = 2x$$</p>
+                <p>$$\\frac{\\partial z}{\\partial y} = 2y$$</p>
+                """
+            }
+        ],
+        "exercises": [
+            {
+                "question": "求 $z = \\ln(x+y)$ 的全微分",
+                "answer": "$dz = \\frac{dx+dy}{x+y}$",
+                "hint": "先求偏导数，再写全微分"
+            }
+        ],
+        "homework": [
+            "教材P210：习题8.1 (1)-(4)",
+            "教材P218：习题8.2 (2), (4), (6)"
+        ],
+        "homework_score": 100
+    },
+    
+    "第九章": {
+        "title": "第九章：重积分",
+        "volume": "下册",
+        "objectives": [
+            "理解二重积分的概念",
+            "掌握二重积分的计算方法",
+            "理解三重积分的概念",
+            "了解重积分的应用"
+        ],
+        "concepts": [
+            {
+                "name": "9.1 二重积分",
+                "content": "二重积分是定积分在二元函数上的推广，用于计算曲顶柱体的体积等。"
+            }
+        ],
+        "formulas": [
+            {
+                "name": "二重积分化为二次积分",
+                "latex": "\\iint_D f(x,y)dxdy = \\int_a^b dx\\int_{\\varphi_1(x)}^{\\varphi_2(x)} f(x,y)dy"
+            },
+            {
+                "name": "极坐标下二重积分",
+                "latex": "\\iint_D f(x,y)dxdy = \\iint_{D^*} f(\\rho\\cos\\theta, \\rho\\sin\\theta)\\rho d\\rho d\\theta"
+            }
+        ],
+        "examples": [
+            {
+                "title": "例题1：计算二重积分",
+                "question": "计算 $\\iint_D (x+y)dxdy$，其中D是由x=0，y=0，x+y=1围成的区域",
+                "solution": """
+                <p><strong>解：</strong></p>
+                <p>将D表示为：$0 \\leq x \\leq 1$，$0 \\leq y \\leq 1-x$</p>
+                <p>$$\\iint_D (x+y)dxdy = \\int_0^1 dx\\int_0^{1-x} (x+y)dy$$</p>
+                <p>$$= \\int_0^1 \\left[xy + \\frac{y^2}{2}\\right]_0^{1-x} dx = \\int_0^1 \\left[x(1-x) + \\frac{(1-x)^2}{2}\\right]dx$$</p>
+                <p>$$= \\frac{1}{3}$$</p>
+                """
+            }
+        ],
+        "exercises": [
+            {
+                "question": "计算 $\\iint_D xy dxdy$，其中D：$0 \\leq x \\leq 1$，$0 \\leq y \\leq 2$",
+                "answer": "1",
+                "hint": "直接计算二次积分"
+            }
+        ],
+        "homework": [
+            "教材P240：习题9.1 (1)-(4)",
+            "教材P248：习题9.2 (2), (4), (6)"
+        ],
+        "homework_score": 100
+    },
+    
+    "第十章": {
+        "title": "第十章：曲线积分与曲面积分",
+        "volume": "下册",
+        "objectives": [
+            "理解第一型曲线积分",
+            "理解第二型曲线积分",
+            "掌握格林公式",
+            "了解曲面积分"
+        ],
+        "concepts": [
+            {
+                "name": "10.1 格林公式",
+                "content": "设平面闭区域D由分段光滑的闭曲线L围成，函数P(x,y)和Q(x,y)在D上具有一阶连续偏导数，则∮_L Pdx+Qdy = ∬_D (∂Q/∂x - ∂P/∂y)dxdy"
+            }
+        ],
+        "formulas": [
+            {
+                "name": "格林公式",
+                "latex": "\\oint_L Pdx + Qdy = \\iint_D \\left(\\frac{\\partial Q}{\\partial x} - \\frac{\\partial P}{\\partial y}\\right)dxdy"
+            }
+        ],
+        "examples": [
+            {
+                "title": "例题1：格林公式",
+                "question": "计算 $\\oint_L (x+y)dx - (x-y)dy$，其中L是圆周 $x^2+y^2=R^2$ 取正向",
+                "solution": """
+                <p><strong>解：</strong></p>
+                <p>使用格林公式：P=x+y，Q=-(x-y)</p>
+                <p>$$\\frac{\\partial Q}{\\partial x} - \\frac{\\partial P}{\\partial y} = -1 - 1 = -2$$</p>
+                <p>$$\\oint_L (x+y)dx - (x-y)dy = \\iint_D (-2)dxdy = -2\\pi R^2$$</p>
+                """
+            }
+        ],
+        "exercises": [
+            {
+                "question": "验证格林公式计算 $\\oint_L 2xydx + x^2dy$，其中L是矩形边界",
+                "answer": "0",
+                "hint": "验证P和Q满足格林公式的条件"
+            }
+        ],
+        "homework": [
+            "教材P270：习题10.1 (1)-(4)",
+            "教材P278：习题10.2 (2), (4)"
+        ],
+        "homework_score": 100
+    },
+    
+    "第十一章": {
+        "title": "第十一章：无穷级数",
+        "volume": "下册",
+        "objectives": [
+            "理解常数项级数的概念",
+            "掌握级数收敛的判别法",
+            "理解幂级数的概念",
+            "了解函数展开成幂级数"
+        ],
+        "concepts": [
+            {
+                "name": "11.1 级数收敛",
+                "content": "如果级数∑ₙ₌₁^∞uₙ的部分和数列{Sₙ}收敛于S，则称级数收敛，其和为S。否则称级数发散。"
+            }
+        ],
+        "formulas": [
+            {
+                "name": "等比级数",
+                "latex": "\\sum_{n=0}^{\\infty} q^n = \\frac{1}{1-q} \\quad (|q| < 1)"
+            },
+            {
+                "name": "e的展开式",
+                "latex": "e^x = 1 + x + \\frac{x^2}{2!} + \\frac{x^3}{3!} + \\cdots = \\sum_{n=0}^{\\infty} \\frac{x^n}{n!}"
+            },
+            {
+                "name": "sin x的展开式",
+                "latex": "\\sin x = x - \\frac{x^3}{3!} + \\frac{x^5}{5!} - \\cdots = \\sum_{n=0}^{\\infty} \\frac{(-1)^n x^{2n+1}}{(2n+1)!}"
+            }
+        ],
+        "examples": [
+            {
+                "title": "例题1：判断收敛性",
+                "question": "判断级数 $\\sum_{n=1}^{\\infty} \\frac{1}{n(n+1)}$ 的收敛性",
+                "solution": """
+                <p><strong>解：</strong></p>
+                <p>部分和：$S_n = 1 - \\frac{1}{2} + \\frac{1}{2} - \\frac{1}{3} + \\cdots + \\frac{1}{n} - \\frac{1}{n+1} = 1 - \\frac{1}{n+1}$</p>
+                <p>$$\\lim_{n\\to\\infty} S_n = \\lim_{n\\to\\infty} \\left(1 - \\frac{1}{n+1}\\right) = 1$$</p>
+                <p><strong>结论：</strong>级数收敛，其和为1</p>
+                """
+            }
+        ],
+        "exercises": [
+            {
+                "question": "判断级数 $\\sum_{n=1}^{\\infty} \\frac{1}{2^n}$ 的收敛性，若收敛则求和",
+                "answer": "收敛，和为1",
+                "hint": "这是等比级数"
+            }
+        ],
+        "homework": [
+            "教材P300：习题11.1 (1)-(4)",
+            "教材P308：习题11.2 (2), (4), (6)"
+        ],
+        "homework_score": 100
+    },
+    
+    "第十二章": {
+        "title": "第十二章：微分几何初步",
+        "volume": "下册",
+        "objectives": [
+            "理解向量函数的微分",
+            "了解空间曲线的曲率",
+            "了解空间曲面理论"
+        ],
+        "concepts": [
+            {
+                "name": "12.1 曲率",
+                "content": "曲率是描述曲线弯曲程度的量，曲率越大，曲线弯曲得越厉害。"
+            }
+        ],
+        "formulas": [
+            {
+                "name": "曲率公式",
+                "latex": "\\kappa = \\frac{|y''|}{(1+y'^2)^{3/2}}"
+            }
+        ],
+        "examples": [
+            {
+                "title": "例题1：计算曲率",
+                "question": "求抛物线 $y=x^2$ 在 $x=0$ 处的曲率",
+                "solution": """
+                <p><strong>解：</strong></p>
+                <p>$y' = 2x$，$y'' = 2$</p>
+                <p>在 $x=0$ 处：$y'=0$，$y''=2$</p>
+                <p>$$\\kappa = \\frac{|2|}{(1+0)^{3/2}} = 2$$</p>
+                """
+            }
+        ],
+        "exercises": [
+            {
+                "question": "求直线 $y=ax+b$ 的曲率",
+                "answer": "0",
+                "hint": "直线不弯曲"
+            }
+        ],
+        "homework": [
+            "教材P330：习题12.1 (1)-(3)",
+            "教材P335：习题12.2 (1), (2)"
+        ],
+        "homework_score": 100
+    }
+}
+
+# 获取输入参数
+volume = "${{ github.event.inputs.volume }}"
+chapter_input = "${{ github.event.inputs.chapter }}"
+difficulty = "${{ github.event.inputs.difficulty }}"
+include_exercises = "${{ github.event.inputs.include_exercises }}" == "true"
+include_homework = "${{ github.event.inputs.include_homework }}" == "true"
+enable_notes = "${{ github.event.inputs.enable_notes }}" == "true"
+
+# 获取章节模板
+template = chapter_templates.get(chapter_input)
+if not template:
+    print(f"错误：未找到章节 {chapter_input} 的模板")
+    exit(1)
+
+# 生成白板HTML
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+filename = f"whiteboard_{chapter_input}_{difficulty}_{timestamp}.html"
+
+html_content = f"""<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{template['title']} - 课堂白板</title>
+    <style>
+        * {{
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }}
+        
+        body {{
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: #f5f7fa;
+            padding: 20px;
+            line-height: 1.8;
+        }}
+        
+        .whiteboard {{
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }}
+        
+        .header {{
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 40px;
+        }}
+        
+        .header h1 {{
+            font-size: 28px;
+            margin-bottom: 10px;
+        }}
+        
+        .header .meta {{
+            font-size: 14px;
+            opacity: 0.9;
+        }}
+        
+        .content {{
+            padding: 40px;
+        }}
+        
+        .section {{
+            margin-bottom: 40px;
+            padding-bottom: 30px;
+            border-bottom: 2px solid #f0f0f0;
+        }}
+        
+        .section:last-child {{
+            border-bottom: none;
+        }}
+        
+        .section h2 {{
+            font-size: 20px;
+            color: #333;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }}
+        
+        .concept {{
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }}
+        
+        .concept h3 {{
+            font-size: 16px;
+            color: #667eea;
+            margin-bottom: 10px;
+        }}
+        
+        .concept p {{
+            color: #666;
+            font-size: 14px;
+        }}
+        
+        .formula-box {{
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }}
+        
+        .formula-box h4 {{
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }}
+        
+        .example {{
+            background: #fff;
+            padding: 25px;
+            border-radius: 10px;
+            border: 2px solid #e0e0e0;
+            margin-bottom: 15px;
+        }}
+        
+        .example h4 {{
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }}
+        
+        .exercise {{
+            background: #f0f7ff;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }}
+        
+        .exercise h4 {{
+            font-size: 15px;
+            color: #333;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }}
+        
+        .exercise .hint {{
+            font-size: 13px;
+            color: #666;
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 5px;
+        }}
+        
+        .homework {{
+            background: #fff8e1;
+            padding: 25px;
+            border-radius: 10px;
+        }}
+        
+        .homework h4 {{
+            font-size: 16px;
+            color: #f57c00;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }}
+        
+        .homework ol {{
+            margin-left: 20px;
+            color: #666;
+        }}
+        
+        .homework li {{
+            margin-bottom: 10px;
+            font-size: 14px;
+        }}
+        
+        .notes-section {{
+            background: #f5f5f5;
+            padding: 30px;
+            border-radius: 10px;
+            margin-top: 30px;
+        }}
+        
+        .notes-section h2 {{
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 15px;
+        }}
+        
+        .notes-section textarea {{
+            width: 100%;
+            min-height: 200px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+        }}
+        
+        .notes-section textarea:focus {{
+            outline: none;
+            border-color: #667eea;
+        }}
+        
+        .notes-buttons {{
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }}
+        
+        .notes-buttons button {{
+            padding: 10px 25px;
+            border: none;
+            border-radius: 8px;
+            background: #667eea;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }}
+        
+        .notes-buttons button:hover {{
+            background: #764ba2;
+        }}
+        
+        .notes-buttons button.secondary {{
+            background: #e0e0e0;
+            color: #666;
+        }}
+        
+        .notes-buttons button.secondary:hover {{
+            background: #d0d0d0;
+        }}
+        
+        @media print {{
+            body {{
+                background: white;
+                padding: 0;
+            }}
+            
+            .notes-section {{
+                display: none;
+            }}
+        }}
+        
+        @media (max-width: 768px) {{
+            .content {{
+                padding: 20px;
+            }}
+            
+            .header {{
+                padding: 20px;
+            }}
+            
+            .header h1 {{
+                font-size: 22px;
+            }}
+        }}
+    </style>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+    <div class="whiteboard">
+        <div class="header">
+            <h1>{template['title']}</h1>
+            <div class="meta">
+                难度等级：{difficulty} | 生成时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+            </div>
+        </div>
+        
+        <div class="content">
+            <!-- 学习目标 -->
+            <div class="section">
+                <h2>📚 学习目标</h2>
+                <ul style="margin-left: 20px; color: #666;">
+"""
+
+# 添加学习目标
+for obj in template['objectives']:
+    html_content += f"                    <li>{obj}</li>\n"
+
+html_content += """                </ul>
+            </div>
+            
+            <!-- 核心概念 -->
+            <div class="section">
+                <h2>💡 核心概念</h2>
+"""
+
+# 添加核心概念
+for concept in template['concepts']:
+    html_content += f"""
+                <div class="concept">
+                    <h3>{concept['name']}</h3>
+                    <p>{concept['content']}</p>
+                </div>
+"""
+
+html_content += """            </div>
+            
+            <!-- 重要公式 -->
+            <div class="section">
+                <h2>📐 重要公式</h2>
+"""
+
+# 添加公式
+for formula in template['formulas']:
+    html_content += f"""
+                <div class="formula-box">
+                    <h4>{formula['name']}</h4>
+                    $${formula['latex']}$$
+                </div>
+"""
+
+html_content += """            </div>
+            
+            <!-- 典型例题 -->
+            <div class="section">
+                <h2>📝 典型例题</h2>
+"""
+
+# 添加例题
+for example in template['examples']:
+    html_content += f"""
+                <div class="example">
+                    <h4>{example['title']}</h4>
+                    <p style="margin-bottom: 15px;"><strong>题目：</strong>{example['question']}</p>
+                    {example['solution']}
+                </div>
+"""
+
+html_content += """            </div>
+"""
+
+# 添加课堂练习
+if include_exercises:
+    html_content += """            <!-- 课堂练习 -->
+            <div class="section">
+                <h2>✏️ 课堂练习</h2>
+"""
+    
+    for i, exercise in enumerate(template['exercises'], 1):
+        html_content += f"""
+                <div class="exercise">
+                    <h4>练习{i}</h4>
+                    <p><strong>题目：</strong>{exercise['question']}</p>
+                    <details>
+                        <summary style="cursor: pointer; color: #667eea;">查看答案</summary>
+                        <p style="margin-top: 15px;"><strong>答案：</strong>{exercise['answer']}</p>
+                        <div class="hint">💡 提示：{exercise['hint']}</div>
+                    </details>
+                </div>
+"""
+    
+    html_content += """            </div>
+"""
+
+# 添加课后作业
+if include_homework:
+    html_content += f"""            <!-- 课后作业 -->
+            <div class="section">
+                <h2>📖 课后作业</h2>
+                <div class="homework">
+                    <h4>作业清单</h4>
+                    <ol>
+"""
+    
+    for hw in template['homework']:
+        html_content += f"                        <li>{hw}</li>\n"
+    
+    html_content += f"""                    </ol>
+                    <p style="margin-top: 20px;"><strong>作业满分：</strong>{template['homework_score']}分</p>
+                    <p style="margin-top: 10px;"><strong>提交时间：</strong>下周一前</p>
+                </div>
+            </div>
+"""
+
+# 添加学生笔记功能
+if enable_notes:
+    html_content += f"""            <!-- 学生笔记 -->
+            <div class="notes-section">
+                <h2>📌 学生笔记</h2>
+                <textarea id="studentNotes" placeholder="在这里记录你的课堂笔记..."></textarea>
+                <div class="notes-buttons">
+                    <button onclick="saveNotes()">💾 保存笔记</button>
+                    <button class="secondary" onclick="exportNotes()">📥 导出笔记</button>
+                    <button class="secondary" onclick="clearNotes()">🗑️ 清空笔记</button>
+                </div>
+            </div>
+            
+            <script>
+                // 保存笔记到本地存储
+                function saveNotes() {{
+                    const notes = document.getElementById('studentNotes').value;
+                    localStorage.setItem('notes_{chapter_input}_{timestamp}', notes);
+                    alert('笔记已保存！');
+                }}
+                
+                // 导出笔记为文本文件
+                function exportNotes() {{
+                    const notes = document.getElementById('studentNotes').value;
+                    const blob = new Blob([notes], {{type: 'text/plain'}});
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = '笔记_{chapter_input}_{timestamp}.txt';
+                    a.click();
+                    URL.revokeObjectURL(url);
+                }}
+                
+                // 清空笔记
+                function clearNotes() {{
+                    if (confirm('确定要清空笔记吗？')) {{
+                        document.getElementById('studentNotes').value = '';
+                        localStorage.removeItem('notes_{chapter_input}_{timestamp}');
+                    }}
+                }}
+                
+                // 页面加载时恢复笔记
+                window.onload = function() {{
+                    const savedNotes = localStorage.getItem('notes_{chapter_input}_{timestamp}');
+                    if (savedNotes) {{
+                        document.getElementById('studentNotes').value = savedNotes;
+                    }}
+                }};
+                
+                // 自动保存笔记（每30秒）
+                setInterval(saveNotes, 30000);
+            </script>
+"""
+
+html_content += """
+        </div>
+    </div>
+</body>
+</html>
+"""
+
+# 保存文件
+save_path = f"data/whiteboards/{volume.lower()}/{filename}"
+with open(save_path, 'w', encoding='utf-8') as f:
+    f.write(html_content)
+
+print(f"白板已生成：{save_path}")
+
+# 生成元数据
+metadata = {
+    "title": template['title'],
+    "volume": volume,
+    "chapter": chapter_input,
+    "difficulty": difficulty,
+    "filename": filename,
+    "timestamp": datetime.now().isoformat(),
+    "path": save_path,
+    "features": {
+        "exercises": include_exercises,
+        "homework": include_homework,
+        "notes": enable_notes
+    }
+}
+
+metadata_path = f"data/whiteboards/{volume.lower()}/metadata_{chapter_input}_{timestamp}.json"
+with open(metadata_path, 'w', encoding='utf-8') as f:
+    json.dump(metadata, f, ensure_ascii=False, indent=2)
+
+print(f"元数据已生成：{metadata_path}")
+PYTHON_SCRIPT
+      
+      - name: 提交白板文件
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add data/whiteboards/
+          git commit -m "生成课堂白板：${{ github.event.inputs.chapter }} - ${{ github.event.inputs.difficulty }}"
+          git push
+      
+      - name: 生成白板索引
+        run: python3 << 'PYTHON_SCRIPT'
+import os
+import json
+from datetime import datetime
+
+# 扫描所有白板文件
+whiteboards = []
+for volume in ['volume1', 'volume2']:
+    volume_path = f"data/whiteboards/{volume}"
+    if os.path.exists(volume_path):
+        for file in os.listdir(volume_path):
+            if file.endswith('.json') and file.startswith('metadata_'):
+                with open(os.path.join(volume_path, file), 'r', encoding='utf-8') as f:
+                    metadata = json.load(f)
+                    whiteboards.append(metadata)
+
+# 生成索引HTML
+index_html = """<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>课堂白板索引</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'PingFang SC', sans-serif; background: #f5f7fa; padding: 30px; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        h1 { color: #333; margin-bottom: 30px; }
+        .volume-section { margin-bottom: 40px; }
+        .volume-title { font-size: 24px; color: #667eea; margin-bottom: 20px; }
+        .whiteboard-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .whiteboard-card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.3s; }
+        .whiteboard-card:hover { transform: translateY(-5px); }
+        .whiteboard-title { font-size: 16px; font-weight: 600; color: #333; margin-bottom: 10px; }
+        .whiteboard-meta { font-size: 13px; color: #666; margin-bottom: 15px; }
+        .whiteboard-link { display: inline-block; padding: 8px 20px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; font-size: 14px; }
+        .whiteboard-link:hover { background: #764ba2; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📚 课堂白板索引</h1>
+        <p style="margin-bottom: 30px; color: #666;">共生成 """ + str(len(whiteboards)) + """ 个白板</p>
+"""
+
+# 按教材分组
+volume1_boards = [wb for wb in whiteboards if wb['volume'] == '上册']
+volume2_boards = [wb for wb in whiteboards if wb['volume'] == '下册']
+
+# 上册
+if volume1_boards:
+    index_html += """
+        <div class="volume-section">
+            <h2 class="volume-title">📘 高等数学（上册）</h2>
+            <div class="whiteboard-grid">
+"""
+    for wb in volume1_boards:
+        file_url = f"https://{os.environ.get('GITHUB_REPOSITORY_OWNER', 'your-username')}.github.io/math-teaching-system/data/whiteboards/volume1/{wb['filename']}"
+        index_html += f"""
+                <div class="whiteboard-card">
+                    <div class="whiteboard-title">{wb['title']}</div>
+                    <div class="whiteboard-meta">
+                        难度：{wb['difficulty']}<br>
+                        生成时间：{wb['timestamp'][:10]}
+                    </div>
+                    <a href="{file_url}" class="whiteboard-link">查看白板</a>
+                </div>
+"""
+    index_html += """
+            </div>
+        </div>
+"""
+
+# 下册
+if volume2_boards:
+    index_html += """
+        <div class="volume-section">
+            <h2 class="volume-title">📗 高等数学（下册）</h2>
+            <div class="whiteboard-grid">
+"""
+    for wb in volume2_boards:
+        file_url = f"https://{os.environ.get('GITHUB_REPOSITORY_OWNER', 'your-username')}.github.io/math-teaching-system/data/whiteboards/volume2/{wb['filename']}"
+        index_html += f"""
+                <div class="whiteboard-card">
+                    <div class="whiteboard-title">{wb['title']}</div>
+                    <div class="whiteboard-meta">
+                        难度：{wb['difficulty']}<br>
+                        生成时间：{wb['timestamp'][:10]}
+                    </div>
+                    <a href="{file_url}" class="whiteboard-link">查看白板</a>
+                </div>
+"""
+    index_html += """
+            </div>
+        </div>
+"""
+
+index_html += """
+    </div>
+</body>
+</html>
+"""
+
+with open('data/whiteboards/index.html', 'w', encoding='utf-8') as f:
+    f.write(index_html)
+
+print("白板索引已生成")
+PYTHON_SCRIPT
+      
+      - name: 提交索引文件
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add data/whiteboards/index.html
+          git commit -m "更新白板索引"
+          git push
+      
+      - name: 生成工作流总结
+        run: |
+          echo "✅ 白板生成完成！" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**生成参数：**" >> $GITHUB_STEP_SUMMARY
+          echo "- 教材：${{ github.event.inputs.volume }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 章节：${{ github.event.inputs.chapter }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 难度：${{ github.event.inputs.difficulty }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 课堂练习：${{ github.event.inputs.include_exercises }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 课后作业：${{ github.event.inputs.include_homework }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 学生笔记：${{ github.event.inputs.enable_notes }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📊 白板文件已保存到 \`data/whiteboards/\` 目录" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 可通过白板索引页面查看所有生成的白板" >> $GITHUB_STEP_SUMMARY
