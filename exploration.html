@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔬 高等数学跨界探索 | 科学发现之旅</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Noto Sans SC', sans-serif; }
+        
+        .hero-gradient {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        }
+        
+        .card-hover {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+        
+        .glow-purple {
+            box-shadow: 0 0 30px rgba(139, 92, 246, 0.3);
+        }
+        
+        .glow-blue {
+            box-shadow: 0 0 30px rgba(59, 130, 246, 0.3);
+        }
+        
+        .intersection-node {
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; }
+        }
+        
+        .task-card {
+            transition: all 0.3s ease;
+        }
+        
+        .task-card:hover {
+            transform: scale(1.02);
+        }
+        
+        .progress-ring {
+            transform: rotate(-90deg);
+        }
+        
+        .floating {
+            animation: floating 3s ease-in-out infinite;
+        }
+        
+        @keyframes floating {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .tab-active {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: white;
+        }
+        
+        .scroll-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .scroll-container::-webkit-scrollbar-track {
+            background: #1e293b;
+            border-radius: 10px;
+        }
+        
+        .scroll-container::-webkit-scrollbar-thumb {
+            background: #6366f1;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-white min-h-screen">
+    <!-- 导航栏 -->
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-slate-900/90 backdrop-blur-lg border-b border-slate-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center space-x-3">
+                    <span class="text-3xl">🔬</span>
+                    <span class="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                        跨界科学探索
+                    </span>
+                </div>
+                <div class="hidden md:flex items-center space-x-6">
+                    <a href="#chapters" class="text-slate-300 hover:text-white transition">章节探索</a>
+                    <a href="#tasks" class="text-slate-300 hover:text-white transition">探索任务</a>
+                    <a href="#achievements" class="text-slate-300 hover:text-white transition">成就系统</a>
+                    <a href="dashboard.html" class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg transition">
+                        返回课堂
+                    </a>
+                </div>
+                <button class="md:hidden text-white" onclick="toggleMobileMenu()">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主页横幅 -->
+    <section class="hero-gradient pt-24 pb-16 px-4">
+        <div class="max-w-7xl mx-auto text-center">
+            <div class="floating inline-block mb-6">
+                <span class="text-8xl">🚀</span>
+            </div>
+            <h1 class="text-4xl md:text-5xl font-black mb-4">
+                数学不只是计算
+            </h1>
+            <p class="text-xl md:text-2xl text-purple-300 mb-8">
+                它是理解世界的钥匙，是创新的源泉
+            </p>
+            <div class="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+                <div class="bg-slate-800/50 rounded-xl p-6 border border-slate-700">
+                    <div class="text-4xl mb-3">🌐</div>
+                    <h3 class="text-lg font-bold text-purple-400">学科交叉</h3>
+                    <p class="text-slate-400 text-sm mt-2">发现数学与物理、计算机、生物学的奇妙连接</p>
+                </div>
+                <div class="bg-slate-800/50 rounded-xl p-6 border border-slate-700">
+                    <div class="text-4xl mb-3">💡</div>
+                    <h3 class="text-lg font-bold text-blue-400">前沿探索</h3>
+                    <p class="text-slate-400 text-sm mt-2">了解最新研究，展望未来发展趋势</p>
+                </div>
+                <div class="bg-slate-800/50 rounded-xl p-6 border border-slate-700">
+                    <div class="text-4xl mb-3">🎯</div>
+                    <h3 class="text-lg font-bold text-green-400">实践任务</h3>
+                    <p class="text-slate-400 text-sm mt-2">动手探索，培养科学研究能力</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 章节选择器 -->
+    <section id="chapters" class="py-12 px-4 bg-slate-800/50">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold mb-2">选择探索章节</h2>
+                <p class="text-slate-400">点击章节卡片，开启你的科学探索之旅</p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- 第一章 -->
+                <div class="chapter-card card-hover bg-gradient-to-br from-purple-900/50 to-purple-800/30 rounded-2xl p-6 border border-purple-700/50 cursor-pointer" onclick="selectChapter(1)">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="text-3xl">📐</div>
+                        <span class="bg-purple-600/30 text-purple-300 px-3 py-1 rounded-full text-sm">上册</span>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">第一章：函数、极限、连续</h3>
+                    <p class="text-slate-400 text-sm mb-4">数学的基石，从有限到无限的第一次飞跃</p>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-purple-300">7个交叉领域 · 5个应用案例</span>
+                        <div class="flex space-x-1">
+                            <span class="w-2 h-2 rounded-full bg-green-400"></span>
+                            <span class="text-green-400">已完成</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 第二章 -->
+                <div class="chapter-card card-hover bg-gradient-to-br from-blue-900/50 to-blue-800/30 rounded-2xl p-6 border border-blue-700/50 cursor-pointer" onclick="selectChapter(2)">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="text-3xl">📈</div>
+                        <span class="bg-blue-600/30 text-blue-300 px-3 py-1 rounded-full text-sm">上册</span>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">第二章：导数与微分</h3>
+                    <p class="text-slate-400 text-sm mb-4">变化的艺术，理解世界如何改变</p>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-blue-300">6个交叉领域 · 6个应用案例</span>
+                        <div class="flex space-x-1">
+                            <span class="w-2 h-2 rounded-full bg-yellow-400"></span>
+                            <span class="text-yellow-400">进行中</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 第三章 -->
+                <div class="chapter-card card-hover bg-gradient-to-br from-green-900/50 to-green-800/30 rounded-2xl p-6 border border-green-700/50 cursor-pointer" onclick="selectChapter(3)">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="text-3xl">⚖️</div>
+                        <span class="bg-green-600/30 text-green-300 px-3 py-1 rounded-full text-sm">上册</span>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">第三章：微分中值定理</h3>
+                    <p class="text-slate-400 text-sm mb-4">平衡之美，寻找最优解的智慧</p>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-green-300">5个交叉领域 · 4个应用案例</span>
+                        <div class="flex space-x-1">
+                            <span class="w-2 h-2 rounded-full bg-slate-600"></span>
+                            <span class="text-slate-400">未开始</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 第七章 -->
+                <div class="chapter-card card-hover bg-gradient-to-br from-orange-900/50 to-orange-800/30 rounded-2xl p-6 border border-orange-700/50 cursor-pointer" onclick="selectChapter(7)">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="text-3xl">🌊</div>
+                        <span class="bg-orange-600/30 text-orange-300 px-3 py-1 rounded-full text-sm">下册</span>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">第七章：微分方程</h3>
+                    <p class="text-slate-400 text-sm mb-4">变化的法则，预测未来的魔法</p>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-orange-300">8个交叉领域 · 7个应用案例</span>
+                        <div class="flex space-x-1">
+                            <span class="w-2 h-2 rounded-full bg-slate-600"></span>
+                            <span class="text-slate-400">未开始</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 第十二章 -->
+                <div class="chapter-card card-hover bg-gradient-to-br from-pink-900/50 to-pink-800/30 rounded-2xl p-6 border border-pink-700/50 cursor-pointer" onclick="selectChapter(12)">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="text-3xl">♾️</div>
+                        <span class="bg-pink-600/30 text-pink-300 px-3 py-1 rounded-full text-sm">下册</span>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">第十二章：无穷级数</h3>
+                    <p class="text-slate-400 text-sm mb-4">无限可能，从有限到无限的桥梁</p>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-pink-300">6个交叉领域 · 6个应用案例</span>
+                        <div class="flex space-x-1">
+                            <span class="w-2 h-2 rounded-full bg-slate-600"></span>
+                            <span class="text-slate-400">未开始</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 查看全部章节 -->
+                <div class="chapter-card card-hover bg-gradient-to-br from-slate-800 to-slate-700 rounded-2xl p-6 border border-slate-600 cursor-pointer flex flex-col justify-center items-center text-center">
+                    <div class="text-4xl mb-3">📚</div>
+                    <h3 class="text-lg font-bold text-white mb-2">查看全部12章</h3>
+                    <p class="text-slate-400 text-sm">完整探索旅程</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 章节详情展示区（点击章节后显示） -->
+    <section id="chapter-detail" class="hidden py-12 px-4">
+        <div class="max-w-7xl mx-auto">
+            <!-- 返回按钮 -->
+            <button onclick="closeChapterDetail()" class="mb-6 flex items-center space-x-2 text-slate-400 hover:text-white transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+                <span>返回章节列表</span>
+            </button>
+
+            <!-- 标签切换 -->
+            <div class="flex space-x-2 mb-6 overflow-x-auto">
+                <button class="tab-btn tab-active px-6 py-2 rounded-lg font-medium whitespace-nowrap" onclick="switchTab('intersection')">
+                    🌐 学科交叉
+                </button>
+                <button class="tab-btn bg-slate-700 hover:bg-slate-600 px-6 py-2 rounded-lg font-medium whitespace-nowrap" onclick="switchTab('applications')">
+                    💼 行业应用
+                </button>
+                <button class="tab-btn bg-slate-700 hover:bg-slate-600 px-6 py-2 rounded-lg font-medium whitespace-nowrap" onclick="switchTab('research')">
+                    🔬 前沿研究
+                </button>
+                <button class="tab-btn bg-slate-700 hover:bg-slate-600 px-6 py-2 rounded-lg font-medium whitespace-nowrap" onclick="switchTab('tasks')">
+                    🎯 探索任务
+                </button>
+            </div>
+
+            <!-- 学科交叉内容 -->
+            <div id="tab-intersection" class="tab-content">
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+                        <div class="flex items-center space-x-3 mb-4">
+                            <div class="w-12 h-12 bg-purple-600/20 rounded-lg flex items-center justify-center">
+                                <span class="text-2xl">⚛️</span>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-lg">物理学</h3>
+                                <p class="text-slate-400 text-sm">最紧密的数学伙伴</p>
+                            </div>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="flex items-start space-x-2">
+                                <span class="text-purple-400 mt-1">•</span>
+                                <p class="text-slate-300 text-sm">瞬时速度：v = lim(Δt→0) Δs/Δt</p>
+                            </div>
+                            <div class="flex items-start space-x-2">
+                                <span class="text-purple-400 mt-1">•</span>
+                                <p class="text-slate-300 text-sm">加速度：a = lim(Δt→0) Δv/Δt</p>
+                            </div>
+                            <div class="flex items-start space-x-2">
+                                <span class="text-purple-400 mt-1">•</span>
+                                <p class="text-slate-300 text-sm">电势函数：位置坐标的连续函数</p>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-slate-700">
+                            <span class="text-xs text-slate-500">推荐教材：《费曼物理学讲义》第2卷</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+                        <div class="flex items-center space-x-3 mb-4">
+                            <div class="w-12 h-12 bg-blue-600/20 rounded-lg flex items-center justify-center">
+                                <span class="text-2xl">💻</span>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-lg">计算机科学</h3>
+                                <p class="text-slate-400 text-sm">算法与计算的数学基础</p>
+                            </div>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="flex items-start space-x-2">
+                                <span class="text-blue-400 mt-1">•</span>
+                                <p class="text-slate-300 text-sm">算法复杂度：O(f(n)) = lim(n→∞) T(n)/f(n)</p>
+                            </div>
+                            <div class="flex items-start space-x-2">
+                                <span class="text-blue-400 mt-1">•</span>
+                                <p class="text-slate-300 text-sm">数值分析：离散点近似连续函数</p>
+                            </div>
+                            <div class="flex items-start space-x-2">
+                                <span class="text-blue-400 mt-1">•</span>
+                                <p class="text-slate-300 text-sm">神经网络激活函数的连续性要求</p>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-slate-700">
+                            <span class="text-xs text-slate-500">推荐教材：《算法导论》第3章</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+                        <div class="flex items-center space-x-3 mb-4">
+                            <div class="w-12 h-12 bg-green-600/20 rounded-lg flex items-center justify-center">
+                                <span class="text-2xl">📊</span>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-lg">经济学</h3>
+                                <p class="text-slate-400 text-sm">边际分析与市场均衡</p>
+                            </div>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="flex items-start space-x-2">
+                                <span class="text-green-400 mt-1">•</span>
+                                <p class="text-slate-300 text-sm">边际成本：MC = lim(Δq→0) ΔC/Δq</p>
+                            </div>
+                            <div class="flex items-start space-x-2">
+                                <span class="text-green-400 mt-1">•</span>
+                                <p class="text-slate-300 text-sm">边际收益：MR = lim(Δq→0) ΔR/Δq</p>
+                            </div>
+                            <div class="flex items-start space-x-2">
+                                <span class="text-green-400 mt-1">•</span>
+                                <p class="text-slate-300 text-sm">市场均衡：供给曲线与需求曲线交点</p>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-slate-700">
+                            <span class="text-xs text-slate-500">推荐教材：《微观经济学》第4章</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+                        <div class="flex items-center space-x-3 mb-4">
+                            <div class="w-12 h-12 bg-pink-600/20 rounded-lg flex items-center justify-center">
+                                <span class="text-2xl">🧬</span>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-lg">生物学</h3>
+                                <p class="text-slate-400 text-sm">生命现象的数学建模</p>
+                            </div>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="flex items-start space-x-2">
+                                <span class="text-pink-400 mt-1">•</span>
+                                <p class="text-slate-300 text-sm">种群增长：连续增长的数学模型</p>
+                            </div>
+                            <div class="flex items-start space-x-2">
+                                <span class="text-pink-400 mt-1">•</span>
+                                <p class="text-slate-300 text-sm">药物动力学：血药浓度的时间连续性</p>
+                            </div>
+                            <div class="flex items-start space-x-2">
+                                <span class="text-pink-400 mt-1">•</span>
+                                <p class="text-slate-300 text-sm">生态系统稳定性：连续性假设</p>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-slate-700">
+                            <span class="text-xs text-slate-500">推荐教材：《数学生物学导论》</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 行业应用内容 -->
+            <div id="tab-applications" class="tab-content hidden">
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div class="bg-slate-800 rounded-xl overflow-hidden border border-slate-700">
+                        <div class="h-2 bg-gradient-to-r from-green-500 to-emerald-500"></div>
+                        <div class="p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="text-3xl">💰</span>
+                                <span class="bg-green-600/20 text-green-400 px-2 py-1 rounded text-xs">热门应用</span>
+                            </div>
+                            <h3 class="font-bold text-lg mb-2">金融工程</h3>
+                            <p class="text-slate-400 text-sm mb-4">Black-Scholes期权定价模型</p>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-slate-500">应用公式：</span>
+                                    <code class="text-green-400">∂V/∂t + ... = 0</code>
+                                </div>
+                                <p class="text-slate-500 mt-3">现代金融数学的基石，2024年全球衍生品市场价值超过$600万亿</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-800 rounded-xl overflow-hidden border border-slate-700">
+                        <div class="h-2 bg-gradient-to-r from-blue-500 to-indigo-500"></div>
+                        <div class="p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="text-3xl">🤖</span>
+                                <span class="bg-blue-600/20 text-blue-400 px-2 py-1 rounded text-xs">前沿技术</span>
+                            </div>
+                            <h3 class="font-bold text-lg mb-2">人工智能</h3>
+                            <p class="text-slate-400 text-sm mb-4">神经网络激活函数</p>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-slate-500">核心概念：</span>
+                                    <code class="text-blue-400">σ(x) = 1/(1+e^-x)</code>
+                                </div>
+                                <p class="text-slate-500 mt-3">深度学习的基础，使AI能够解决复杂问题</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-800 rounded-xl overflow-hidden border border-slate-700">
+                        <div class="h-2 bg-gradient-to-r from-purple-500 to-pink-500"></div>
+                        <div class="p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="text-3xl">🏥</span>
+                                <span class="bg-purple-600/20 text-purple-400 px-2 py-1 rounded text-xs">生命科学</span>
+                            </div>
+                            <h3 class="font-bold text-lg mb-2">医疗诊断</h3>
+                            <p class="text-slate-400 text-sm mb-4">医学图像分析与处理</p>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-slate-500">关键应用：</span>
+                                    <code class="text-purple-400">图像边缘检测</code>
+                                </div>
+                                <p class="text-slate-500 mt-3">提高诊断准确性，拯救生命</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-800 rounded-xl overflow-hidden border border-slate-700">
+                        <div class="h-2 bg-gradient-to-r from-orange-500 to-red-500"></div>
+                        <div class="p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="text-3xl">🚗</span>
+                                <span class="bg-orange-600/20 text-orange-400 px-2 py-1 rounded text-xs">智能制造</span>
+                            </div>
+                            <h3 class="font-bold text-lg mb-2">自动驾驶</h3>
+                            <p class="text-slate-400 text-sm mb-4">路径规划与控制算法</p>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-slate-500">核心算法：</span>
+                                    <code class="text-orange-400">最优控制理论</code>
+                                </div>
+                                <p class="text-slate-500 mt-3">实现精准的车辆控制，保障安全</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-800 rounded-xl overflow-hidden border border-slate-700">
+                        <div class="h-2 bg-gradient-to-r from-cyan-500 to-blue-500"></div>
+                        <div class="p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="text-3xl">✈️</span>
+                                <span class="bg-cyan-600/20 text-cyan-400 px-2 py-1 rounded text-xs">航空航天</span>
+                            </div>
+                            <h3 class="font-bold text-lg mb-2">飞行器设计</h3>
+                            <p class="text-slate-400 text-sm mb-4">轨迹优化与空气动力学</p>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-slate-500">关键领域：</span>
+                                    <code class="text-cyan-400">流体力学方程</code>
+                                </div>
+                                <p class="text-slate-500 mt-3">降低燃料消耗，提高效率</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-800 rounded-xl overflow-hidden border border-slate-700">
+                        <div class="h-2 bg-gradient-to-r from-teal-500 to-green-500"></div>
+                        <div class="p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="text-3xl">🦠</span>
+                                <span class="bg-teal-600/20 text-teal-400 px-2 py-1 rounded text-xs">公共卫生</span>
+                            </div>
+                            <h3 class="font-bold text-lg mb-2">流行病学</h3>
+                            <p class="text-slate-400 text-sm mb-4">传染病传播模型</p>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-slate-500">经典模型：</span>
+                                    <code class="text-teal-400">SIR模型</code>
+                                </div>
+                                <p class="text-slate-500 mt-3">指导疫情防控，拯救生命</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 前沿研究内容 -->
+            <div id="tab-research" class="tab-content hidden">
+                <div class="space-y-6">
+                    <div class="bg-gradient-to-r from-purple-900/30 to-blue-900/30 rounded-xl p-6 border border-purple-700/50">
+                        <div class="flex items-start space-x-4">
+                            <div class="w-14 h-14 bg-purple-600/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <span class="text-3xl">🚀</span>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-3 mb-2">
+                                    <h3 class="text-xl font-bold">高维优化与深度学习</h3>
+                                    <span class="bg-red-500/20 text-red-400 px-2 py-1 rounded text-xs">热门研究方向</span>
+                                </div>
+                                <p class="text-slate-300 mb-4">研究高维空间中的梯度下降算法及其收敛性，解决非凸优化问题</p>
+                                <div class="grid md:grid-cols-3 gap-4">
+                                    <div class="bg-slate-800/50 rounded-lg p-4">
+                                        <p class="text-sm text-slate-500 mb-1">核心问题</p>
+                                        <p class="text-slate-300">如何避免陷入局部最优？如何加速梯度下降？</p>
+                                    </div>
+                                    <div class="bg-slate-800/50 rounded-lg p-4">
+                                        <p class="text-sm text-slate-500 mb-1">领先机构</p>
+                                        <p class="text-slate-300">Google DeepMind · OpenAI · 斯坦福大学</p>
+                                    </div>
+                                    <div class="bg-slate-800/50 rounded-lg p-4">
+                                        <p class="text-sm text-slate-500 mb-1">相关论文</p>
+                                        <a href="#" class="text-purple-400 hover:text-purple-300 text-sm">arxiv.org > 搜索"high-dimensional optimization"</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gradient-to-r from-blue-900/30 to-cyan-900/30 rounded-xl p-6 border border-blue-700/50">
+                        <div class="flex items-start space-x-4">
+                            <div class="w-14 h-14 bg-blue-600/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <span class="text-3xl">🌊</span>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-3 mb-2">
+                                    <h3 class="text-xl font-bold">微分方程数值解法</h3>
+                                    <span class="bg-blue-500/20 text-blue-400 px-2 py-1 rounded text-xs">持续热门</span>
+                                </div>
+                                <p class="text-slate-300 mb-4">研究更高效的微分方程求解算法，解决复杂系统建模问题</p>
+                                <div class="grid md:grid-cols-3 gap-4">
+                                    <div class="bg-slate-800/50 rounded-lg p-4">
+                                        <p class="text-sm text-slate-500 mb-1">核心问题</p>
+                                        <p class="text-slate-300">如何提高数值稳定性？如何处理刚性问题？</p>
+                                    </div>
+                                    <div class="bg-slate-800/50 rounded-lg p-4">
+                                        <p class="text-sm text-slate-500 mb-1">领先机构</p>
+                                        <p class="text-slate-300">苏黎世联邦理工学院 · MIT · 牛津大学</p>
+                                    </div>
+                                    <div class="bg-slate-800/50 rounded-lg p-4">
+                                        <p class="text-sm text-slate-500 mb-1">相关论文</p>
+                                        <a href="#" class="text-blue-400 hover:text-blue-300 text-sm">arxiv.org > 搜索"numerical differential equations"</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gradient-to-r from-green-900/30 to-teal-900/30 rounded-xl p-6 border border-green-700/50">
+                        <div class="flex items-start space-x-4">
+                            <div class="w-14 h-14 bg-green-600/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <span class="text-3xl">🔮</span>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-3 mb-2">
+                                    <h3 class="text-xl font-bold">量子计算与数学基础</h3>
+                                    <span class="bg-green-500/20 text-green-400 px-2 py-1 rounded text-xs">新兴方向</span>
+                                </div>
+                                <p class="text-slate-300 mb-4">探索数学理论在量子计算中的应用，建立新的计算范式</p>
+                                <div class="grid md:grid-cols-3 gap-4">
+                                    <div class="bg-slate-800/50 rounded-lg p-4">
+                                        <p class="text-sm text-slate-500 mb-1">核心问题</p>
+                                        <p class="text-slate-300">如何用量子算法求解数学问题？</p>
+                                    </div>
+                                    <div class="bg-slate-800/50 rounded-lg p-4">
+                                        <p class="text-sm text-slate-500 mb-1">领先机构</p>
+                                        <p class="text-slate-300">IBM Research · Google Quantum AI · 麻省理工学院</p>
+                                    </div>
+                                    <div class="bg-slate-800/50 rounded-lg p-4">
+                                        <p class="text-sm text-slate-500 mb-1">相关论文</p>
+                                        <a href="#" class="text-green-400 hover:text-green-300 text-sm">arxiv.org > 搜索"quantum computing mathematics"</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 探索任务内容 -->
+            <div id="tab-tasks" class="tab-content hidden">
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="bg-slate-800 rounded-xl p-6 border border-green-600/30 task-card">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 bg-green-600/20 rounded-lg flex items-center justify-center">
+                                    <span class="text-xl">🎯</span>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold">认知型任务</h3>
+                                    <p class="text-slate-400 text-sm">培养观察与表达能力</p>
+                                </div>
+                            </div>
+                            <span class="bg-green-600/30 text-green-400 px-3 py-1 rounded-full text-sm">容易</span>
+                        </div>
+                        <h4 class="font-semibold mb-2">寻找生活中的极限现象</h4>
+                        <p class="text-slate-400 text-sm mb-4">观察并记录至少3个生活中的极限现象，用数学语言描述</p>
+                        <div class="space-y-2 mb-4">
+                            <div class="flex items-center space-x-2 text-sm">
+                                <span class="text-green-400">⏱️</span>
+                                <span class="text-slate-300">预计时间：2小时</span>
+                            </div>
+                            <div class="flex items-center space-x-2 text-sm">
+                                <span class="text-green-400">🎓</span>
+                                <span class="text-slate-300">能力目标：培养用数学视角观察世界的能力</span>
+                            </div>
+                        </div>
+                        <button onclick="startTask('cognitive')" class="w-full bg-green-600 hover:bg-green-700 py-2 rounded-lg transition">
+                            开始任务
+                        </button>
+                    </div>
+
+                    <div class="bg-slate-800 rounded-xl p-6 border border-yellow-600/30 task-card">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 bg-yellow-600/20 rounded-lg flex items-center justify-center">
+                                    <span class="text-xl">📚</span>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold">调研型任务</h3>
+                                    <p class="text-slate-400 text-sm">培养信息搜索与整理能力</p>
+                                </div>
+                            </div>
+                            <span class="bg-yellow-600/30 text-yellow-400 px-3 py-1 rounded-full text-sm">一般</span>
+                        </div>
+                        <h4 class="font-semibold mb-2">调研一个跨界应用案例</h4>
+                        <p class="text-slate-400 text-sm mb-4">选择一个学科或行业，调研其中极限概念的具体应用</p>
+                        <div class="space-y-2 mb-4">
+                            <div class="flex items-center space-x-2 text-sm">
+                                <span class="text-yellow-400">⏱️</span>
+                                <span class="text-slate-300">预计时间：4小时</span>
+                            </div>
+                            <div class="flex items-center space-x-2 text-sm">
+                                <span class="text-yellow-400">🎓</span>
+                                <span class="text-slate-300">能力目标：理解数学理论的普适性价值</span>
+                            </div>
+                        </div>
+                        <button onclick="startTask('research')" class="w-full bg-yellow-600 hover:bg-yellow-700 py-2 rounded-lg transition">
+                            开始任务
+                        </button>
+                    </div>
+
+                    <div class="bg-slate-800 rounded-xl p-6 border border-red-600/30 task-card md:col-span-2">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 bg-red-600/20 rounded-lg flex items-center justify-center">
+                                    <span class="text-xl">💡</span>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold">创新型任务</h3>
+                                    <p class="text-slate-400 text-sm">培养科学研究与创新能力</p>
+                                </div>
+                            </div>
+                            <span class="bg-red-600/30 text-red-400 px-3 py-1 rounded-full text-sm">困难</span>
+                        </div>
+                        <h4 class="font-semibold mb-2">设计一个极限相关的微型研究课题</h4>
+                        <p class="text-slate-400 text-sm mb-4">基于个人兴趣，设计一个关于极限的小型研究或实验，包括问题定义、研究方法、预期成果</p>
+                        <div class="grid md:grid-cols-2 gap-4 mb-4">
+                            <div class="flex items-center space-x-2 text-sm">
+                                <span class="text-red-400">⏱️</span>
+                                <span class="text-slate-300">预计时间：8小时（可分多次完成）</span>
+                            </div>
+                            <div class="flex items-center space-x-2 text-sm">
+                                <span class="text-red-400">🎓</span>
+                                <span class="text-slate-300">能力目标：培养科学探索和问题定义能力</span>
+                            </div>
+                        </div>
+                        <button onclick="startTask('creative')" class="w-full bg-red-600 hover:bg-red-700 py-2 rounded-lg transition">
+                            开始任务
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 探索进度统计 -->
+    <section id="tasks" class="py-12 px-4 bg-slate-800/50">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold mb-2">你的探索进度</h2>
+                <p class="text-slate-400">追踪你的科学探索之旅</p>
+            </div>
+            
+            <div class="grid md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-slate-800 rounded-xl p-6 border border-slate-700 text-center">
+                    <div class="text-4xl font-bold text-purple-400 mb-2">3/12</div>
+                    <p class="text-slate-400 text-sm">章节探索</p>
+                </div>
+                <div class="bg-slate-800 rounded-xl p-6 border border-slate-700 text-center">
+                    <div class="text-4xl font-bold text-blue-400 mb-2">5/18</div>
+                    <p class="text-slate-400 text-sm">应用案例</p>
+                </div>
+                <div class="bg-slate-800 rounded-xl p-6 border border-slate-700 text-center">
+                    <div class="text-4xl font-bold text-green-400 mb-2">2/8</div>
+                    <p class="text-slate-400 text-sm">探索任务</p>
+                </div>
+                <div class="bg-slate-800 rounded-xl p-6 border border-slate-700 text-center">
+                    <div class="text-4xl font-bold text-orange-400 mb-2">650</div>
+                    <p class="text-slate-400 text-sm">探索积分</p>
+                </div>
+            </div>
+
+            <!-- 成就系统 -->
+            <div class="bg-gradient-to-r from-purple-900/30 to-blue-900/30 rounded-xl p-6 border border-purple-700/50">
+                <h3 class="text-xl font-bold mb-4">🏆 成就徽章</h3>
+                <div class="grid md:grid-cols-6 gap-4">
+                    <div class="text-center">
+                        <div class="w-16 h-16 bg-green-600/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                            <span class="text-3xl">🌱</span>
+                        </div>
+                        <p class="text-sm text-slate-300">初探者</p>
+                        <p class="text-xs text-green-400">已获得</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-16 h-16 bg-blue-600/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                            <span class="text-3xl">🔬</span>
+                        </div>
+                        <p class="text-sm text-slate-300">实验家</p>
+                        <p class="text-xs text-blue-400">已获得</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-16 h-16 bg-purple-600/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                            <span class="text-3xl">🌐</span>
+                        </div>
+                        <p class="text-sm text-slate-300">跨领域者</p>
+                        <p class="text-xs text-slate-500">75%进度</p>
+                    </div>
+                    <div class="text-center opacity-50">
+                        <div class="w-16 h-16 bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-2">
+                            <span class="text-3xl">🚀</span>
+                        </div>
+                        <p class="text-sm text-slate-400">探索先锋</p>
+                        <p class="text-xs text-slate-500">未解锁</p>
+                    </div>
+                    <div class="text-center opacity-50">
+                        <div class="w-16 h-16 bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-2">
+                            <span class="text-3xl">⭐</span>
+                        </div>
+                        <p class="text-sm text-slate-400">创新者</p>
+                        <p class="text-xs text-slate-500">未解锁</p>
+                    </div>
+                    <div class="text-center opacity-50">
+                        <div class="w-16 h-16 bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-2">
+                            <span class="text-3xl">👑</span>
+                        </div>
+                        <p class="text-sm text-slate-400">科学大师</p>
+                        <p class="text-xs text-slate-500">未解锁</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 探索成果展示 -->
+    <section id="achievements" class="py-12 px-4">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold mb-2">探索成果展示</h2>
+                <p class="text-slate-400">看看同学们的精彩探索成果</p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="bg-slate-800 rounded-xl overflow-hidden border border-slate-700">
+                    <div class="p-6">
+                        <div class="flex items-center space-x-3 mb-4">
+                            <div class="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center">
+                                <span class="text-lg">张</span>
+                            </div>
+                            <div>
+                                <h4 class="font-bold">张同学</h4>
+                                <p class="text-slate-400 text-sm">计算机科学专业</p>
+                            </div>
+                        </div>
+                        <h5 class="font-semibold text-purple-400 mb-2">🎯 认知型任务：极限在算法中的应用</h5>
+                        <p class="text-slate-400 text-sm mb-4">通过分析时间复杂度O(f(n))的定义，发现极限理论在计算机算法分析中的核心作用...</p>
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-slate-500">2024-01-15</span>
+                            <div class="flex items-center space-x-1">
+                                <span class="text-red-400">❤️</span>
+                                <span class="text-slate-400">24</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-800 rounded-xl overflow-hidden border border-slate-700">
+                    <div class="p-6">
+                        <div class="flex items-center space-x-3 mb-4">
+                            <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
+                                <span class="text-lg">李</span>
+                            </div>
+                            <div>
+                                <h4 class="font-bold">李同学</h4>
+                                <p class="text-slate-400 text-sm">物理学专业</p>
+                            </div>
+                        </div>
+                        <h5 class="font-semibold text-blue-400 mb-2">📚 调研型任务：极限在量子力学中的应用</h5>
+                        <p class="text-slate-400 text-sm mb-4">深入研究了波函数归一化条件中的极限概念，发现其在量子态描述中的重要性...</p>
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-slate-500">2024-01-14</span>
+                            <div class="flex items-center space-x-1">
+                                <span class="text-red-400">❤️</span>
+                                <span class="text-slate-400">32</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-800 rounded-xl overflow-hidden border border-slate-700">
+                    <div class="p-6">
+                        <div class="flex items-center space-x-3 mb-4">
+                            <div class="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center">
+                                <span class="text-lg">王</span>
+                            </div>
+                            <div>
+                                <h4 class="font-bold">王同学</h4>
+                                <p class="text-slate-400 text-sm">经济学专业</p>
+                            </div>
+                        </div>
+                        <h5 class="font-semibold text-green-400 mb-2">💡 创新型任务：边际分析在电商平台的应用</h5>
+                        <p class="text-slate-400 text-sm mb-4">设计了基于边际收益分析的定价优化算法，帮助某电商平台提升了8%的利润率...</p>
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-slate-500">2024-01-13</span>
+                            <div class="flex items-center space-x-1">
+                                <span class="text-red-400">❤️</span>
+                                <span class="text-slate-400">45</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 页脚 -->
+    <footer class="bg-slate-900 border-t border-slate-800 py-8 px-4">
+        <div class="max-w-7xl mx-auto text-center">
+            <p class="text-slate-400 text-sm mb-2">🔬 高等数学跨界科学探索系统</p>
+            <p class="text-slate-500 text-xs">培养科学探索精神，激发学习兴趣</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        // 章节选择
+        function selectChapter(chapterId) {
+            const detailSection = document.getElementById('chapter-detail');
+            detailSection.classList.remove('hidden');
+            detailSection.scrollIntoView({ behavior: 'smooth' });
+            
+            // 加载对应章节数据（这里模拟数据加载）
+            loadChapterData(chapterId);
+        }
+
+        // 关闭章节详情
+        function closeChapterDetail() {
+            const detailSection = document.getElementById('chapter-detail');
+            detailSection.classList.add('hidden');
+            document.getElementById('chapters').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // 标签切换
+        function switchTab(tabName) {
+            // 隐藏所有标签内容
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            // 显示选中的标签内容
+            document.getElementById('tab-' + tabName).classList.remove('hidden');
+            
+            // 更新标签按钮样式
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('tab-active');
+                btn.classList.add('bg-slate-700');
+            });
+            
+            event.target.classList.add('tab-active');
+            event.target.classList.remove('bg-slate-700');
+        }
+
+        // 开始任务
+        function startTask(taskType) {
+            alert('🎯 任务启动！\n\n请按照任务要求完成探索，完成后可在此提交你的成果。\n\n祝你探索愉快！');
+        }
+
+        // 加载章节数据（模拟）
+        function loadChapterData(chapterId) {
+            console.log('加载章节', chapterId, '的数据');
+            // 实际应用中，这里会从后端API获取数据
+        }
+
+        // 移动端菜单切换
+        function toggleMobileMenu() {
+            alert('移动端菜单功能待实现');
+        }
+    </script>
+</body>
+</html>
